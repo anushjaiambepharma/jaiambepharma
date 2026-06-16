@@ -1,10 +1,11 @@
 "use client";
-import { useState, use } from "react";
+import { useState, use, useMemo } from "react";
 import Link from "next/link";
 import {
-  TrendingUp, TrendingDown, Star, StarOff, FileText, BookOpen,
-  BarChart2, Globe, AlertTriangle, ChevronDown, ChevronUp,
-  CheckSquare, Square, PenLine, ExternalLink, Activity
+  TrendingUp, TrendingDown, Star, StarOff, FileText,
+  BarChart2, Globe, AlertTriangle,
+  CheckSquare, Square, PenLine, ExternalLink, Activity,
+  DollarSign, PieChart, ArrowUpRight, ArrowDownRight
 } from "lucide-react";
 import {
   getStockByTicker, getNewsByTicker, getFilingsByTicker,
@@ -14,8 +15,7 @@ import { formatDate, formatRelativeTime } from "@/lib/utils";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  ReferenceLine, Cell, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis
+  Cell
 } from "recharts";
 
 const TABS = [
@@ -26,6 +26,9 @@ const TABS = [
   { id: "peers", label: "Peer Comparison", icon: Globe },
   { id: "checklist", label: "Research Checklist", icon: CheckSquare },
   { id: "notes", label: "My Notes", icon: PenLine },
+  { id: "pl", label: "P&L Statement", icon: DollarSign },
+  { id: "bs", label: "Balance Sheet", icon: PieChart },
+  { id: "cf", label: "Cash Flow", icon: ArrowUpRight },
 ];
 
 const RESEARCH_CHECKLIST = [
@@ -36,12 +39,31 @@ const RESEARCH_CHECKLIST = [
   { section: "Risks", items: ["Regulatory/policy risks identified?", "Competition threats mapped?", "Commodity/input cost exposure?", "Currency risk (export/import mix)?", "Key-person risk?"] },
 ];
 
+const FY_YEARS = ["FY21", "FY22", "FY23", "FY24", "FY25"];
+
 function MetricCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
     <div style={{ background: "var(--background)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 16px" }}>
       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 16, fontWeight: 700, color: color || "var(--foreground)" }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function CAGRBox({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div style={{
+      background: color || "linear-gradient(135deg, #b8742a 0%, #e3a83d 100%)",
+      borderRadius: 10,
+      padding: "14px 18px",
+      minWidth: 120,
+      flex: 1,
+      textAlign: "center" as const,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+    }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px" }}>{value}</div>
+      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.82)", marginTop: 4, fontWeight: 600, lineHeight: 1.4 }}>{label}</div>
     </div>
   );
 }
@@ -71,6 +93,79 @@ function ShareholdingBar({ promoter, fii, dii, pub }: { promoter: number; fii: n
       </div>
     </div>
   );
+}
+
+// Helper: derive a scaling multiplier from annualRevenue data
+function buildPLData(annualRevenue: Array<{ year: string; revenue: number; profit: number; ebitda: number }>) {
+  // Use the 5 data points or pad/trim to match FY_YEARS
+  const rows = [...annualRevenue].slice(-5);
+  while (rows.length < 5) {
+    const first = rows[0];
+    rows.unshift({ year: "", revenue: first.revenue * 0.82, profit: first.profit * 0.80, ebitda: first.ebitda * 0.81 });
+  }
+  return rows.map((r, i) => {
+    const revenue = Math.round(r.revenue);
+    const ebitda = Math.round(r.ebitda);
+    const ebitdaMargin = parseFloat(((ebitda / revenue) * 100).toFixed(1));
+    const depreciation = Math.round(ebitda * 0.15);
+    const ebit = ebitda - depreciation;
+    const interest = Math.round(revenue * 0.025);
+    const pbt = ebit - interest;
+    const taxRate = 25.17;
+    const pat = Math.round(pbt * (1 - taxRate / 100));
+    const patMargin = parseFloat(((pat / revenue) * 100).toFixed(1));
+    const sharesM = 100; // mock shares in millions
+    const eps = parseFloat((pat / sharesM).toFixed(2));
+    const dps = parseFloat((eps * 0.25).toFixed(2));
+    const expenses = revenue - ebitda;
+    return { fy: FY_YEARS[i], revenue, expenses, ebitda, ebitdaMargin, depreciation, ebit, interest, pbt, taxRate, pat, patMargin, eps, dps };
+  });
+}
+
+function buildBSData(marketCap: number) {
+  const base = marketCap * 0.3;
+  return FY_YEARS.map((fy, i) => {
+    const growth = 1 + i * 0.08;
+    const shareCapital = Math.round(base * 0.04 * growth);
+    const reserves = Math.round(base * 0.55 * growth);
+    const totalEquity = shareCapital + reserves;
+    const ltDebt = Math.round(base * 0.22 * (1 - i * 0.015));
+    const stDebt = Math.round(base * 0.08 * growth * 0.85);
+    const totalDebt = ltDebt + stDebt;
+    const otherLiab = Math.round(base * 0.11 * growth);
+    const totalLiab = totalEquity + totalDebt + otherLiab;
+    const netFixed = Math.round(base * 0.38 * growth);
+    const cwip = Math.round(base * 0.05 * growth);
+    const investments = Math.round(base * 0.12 * growth);
+    const tradeRec = Math.round(base * 0.14 * growth);
+    const inventories = Math.round(base * 0.09 * growth);
+    const cash = Math.round(base * 0.1 * growth);
+    const otherCA = Math.round(base * 0.12 * growth);
+    const totalAssets = netFixed + cwip + investments + tradeRec + inventories + cash + otherCA;
+    return { fy, shareCapital, reserves, totalEquity, ltDebt, stDebt, totalDebt, otherLiab, totalLiab, netFixed, cwip, investments, tradeRec, inventories, cash, otherCA, totalAssets };
+  });
+}
+
+function buildCFData(annualRevenue: Array<{ year: string; revenue: number; profit: number; ebitda: number }>) {
+  const rows = [...annualRevenue].slice(-5);
+  while (rows.length < 5) {
+    const first = rows[0];
+    rows.unshift({ year: "", revenue: first.revenue * 0.82, profit: first.profit * 0.80, ebitda: first.ebitda * 0.81 });
+  }
+  return rows.map((r, i) => {
+    const operating = Math.round(r.ebitda * 0.82);
+    const investing = -Math.round(r.ebitda * 0.45);
+    const financing = -Math.round(r.ebitda * 0.2);
+    const net = operating + investing + financing;
+    const capex = Math.round(Math.abs(investing) * 0.6);
+    const fcf = operating - capex;
+    return { fy: FY_YEARS[i], operating, investing, financing, net, fcf };
+  });
+}
+
+function calcCAGR(start: number, end: number, years: number) {
+  if (!start || start <= 0) return 0;
+  return parseFloat((((end / start) ** (1 / years) - 1) * 100).toFixed(1));
 }
 
 export default function CompanyPage({ params }: { params: Promise<{ ticker: string }> }) {
@@ -128,6 +223,50 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
   const completedItems = checkedItems.size;
   const progressPct = Math.round((completedItems / totalItems) * 100);
 
+  // ---- Derived financial data ----
+  const annualData = financials?.annualRevenue ?? [];
+  const plData = annualData.length ? buildPLData(annualData) : [];
+  const bsData = buildBSData(stock.marketCap);
+  const cfData = annualData.length ? buildCFData(annualData) : [];
+
+  // CAGR calculations for summary boxes
+  const rev3yCagr = annualData.length >= 4
+    ? calcCAGR(annualData[annualData.length - 4].revenue, annualData[annualData.length - 1].revenue, 3)
+    : 14;
+  const rev5yCagr = annualData.length >= 2
+    ? calcCAGR(annualData[0].revenue, annualData[annualData.length - 1].revenue, 4)
+    : 11;
+  const pat3yCagr = annualData.length >= 4
+    ? calcCAGR(annualData[annualData.length - 4].profit, annualData[annualData.length - 1].profit, 3)
+    : 16;
+  const pat5yCagr = annualData.length >= 2
+    ? calcCAGR(annualData[0].profit, annualData[annualData.length - 1].profit, 4)
+    : 12;
+  // Mock stock returns
+  const stockReturn3y = parseFloat((15 + (stock.roe % 30)).toFixed(1));
+  const stockReturn5y = parseFloat((10 + (stock.roe % 25)).toFixed(1));
+
+  // ROE/ROCE trend (mock, derived from base values)
+  const roeRoceTrend = FY_YEARS.map((fy, i) => ({
+    fy,
+    roe: parseFloat((stock.roe * (0.75 + i * 0.065)).toFixed(1)),
+    roce: parseFloat((stock.roce * (0.78 + i * 0.055)).toFixed(1)),
+  }));
+
+  // EPS trend
+  const epsTrend = plData.map((r) => ({ fy: r.fy, eps: r.eps }));
+
+  // Dividend history
+  const divHistory = plData.map((r) => ({
+    fy: r.fy,
+    dps: r.dps,
+    yield: parseFloat(((r.dps / stock.price) * 100).toFixed(2)),
+  }));
+
+  // Promoter pledging
+  const pledgePct = parseFloat((stock.promoterHolding * 0.08).toFixed(1));
+  const pledgeWarning = pledgePct > 20;
+
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 20px" }}>
       {/* Breadcrumb */}
@@ -138,7 +277,7 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
       </div>
 
       {/* Stock Header */}
-      <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
+      <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 14, padding: "20px 24px", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
@@ -197,6 +336,37 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
           <MetricCard label="EPS" value={`₹${stock.eps.toFixed(2)}`} sub="Earnings Per Share" />
           <MetricCard label="Dividend Yield" value={`${stock.dividendYield.toFixed(2)}%`} sub="Annual yield" />
           <MetricCard label="Volume" value={(stock.volume / 1e5).toFixed(1) + "L"} sub={`Avg: ${(stock.avgVolume / 1e5).toFixed(1)}L`} />
+        </div>
+      </div>
+
+      {/* CAGR Summary Boxes */}
+      <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "16px 20px", marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase" as const, letterSpacing: "0.07em", marginBottom: 12 }}>
+          Compounded Annual Growth &amp; Returns
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <CAGRBox label="Revenue 3Y CAGR" value={`${rev3yCagr}%`} />
+          <CAGRBox label="Revenue 5Y CAGR" value={`${rev5yCagr}%`} />
+          <CAGRBox
+            label="Profit 3Y CAGR"
+            value={`${pat3yCagr}%`}
+            color={pat3yCagr > 15 ? "linear-gradient(135deg,#2a6e3f 0%,#3fb950 100%)" : "linear-gradient(135deg,#b8742a 0%,#e3a83d 100%)"}
+          />
+          <CAGRBox
+            label="Profit 5Y CAGR"
+            value={`${pat5yCagr}%`}
+            color={pat5yCagr > 15 ? "linear-gradient(135deg,#2a6e3f 0%,#3fb950 100%)" : "linear-gradient(135deg,#b8742a 0%,#e3a83d 100%)"}
+          />
+          <CAGRBox
+            label="Stock Return 3Y"
+            value={`${stockReturn3y}%`}
+            color="linear-gradient(135deg,#1a4a7a 0%,#58a6ff 100%)"
+          />
+          <CAGRBox
+            label="Stock Return 5Y"
+            value={`${stockReturn5y}%`}
+            color="linear-gradient(135deg,#1a4a7a 0%,#58a6ff 100%)"
+          />
         </div>
       </div>
 
@@ -288,6 +458,35 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
             </ResponsiveContainer>
           </div>
 
+          {/* ROE / ROCE Trend */}
+          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>ROE / ROCE Trend (%)</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={roeRoceTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="fy" tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                <Tooltip contentStyle={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} formatter={(v) => `${v}%`} />
+                <Line type="monotone" dataKey="roe" stroke="#e3a83d" strokeWidth={2} dot={{ r: 4, fill: "#e3a83d" }} name="ROE" />
+                <Line type="monotone" dataKey="roce" stroke="#bc8cff" strokeWidth={2} dot={{ r: 4, fill: "#bc8cff" }} name="ROCE" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* EPS Trend */}
+          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>EPS Trend (₹)</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={epsTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="fy" tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} tickFormatter={(v) => `₹${v}`} />
+                <Tooltip contentStyle={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} formatter={(v) => `₹${v}`} />
+                <Line type="monotone" dataKey="eps" stroke="#58a6ff" strokeWidth={2} dot={{ r: 4, fill: "#58a6ff" }} name="EPS" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
           {/* Shareholding */}
           <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Shareholding Pattern</h3>
@@ -320,6 +519,47 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
                       <td style={{ fontSize: 12, padding: "8px 0", color: row.current > row.prev ? "var(--accent-green)" : "var(--accent-red)", fontWeight: 600 }}>
                         {row.current > row.prev ? "▲" : "▼"} {Math.abs(row.current - row.prev).toFixed(2)}%
                       </td>
+                    </tr>
+                  ))}
+                  {/* Pledging row */}
+                  <tr style={{ borderTop: "1px solid var(--border)" }}>
+                    <td style={{ fontSize: 12, padding: "8px 0", color: pledgeWarning ? "var(--accent-red)" : "var(--muted)" }}>
+                      Pledged (of Promoter)
+                    </td>
+                    <td colSpan={2} style={{ fontSize: 12, fontWeight: 700, padding: "8px 0", color: pledgeWarning ? "var(--accent-red)" : "var(--accent-yellow)" }}>
+                      {pledgePct}%
+                      {pledgeWarning && " ⚠️"}
+                    </td>
+                    <td style={{ fontSize: 11, color: pledgeWarning ? "var(--accent-red)" : "var(--muted)", padding: "8px 0" }}>
+                      {pledgeWarning ? "High pledge risk" : "Low pledge"}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {pledgeWarning && (
+              <div style={{ marginTop: 10, padding: "8px 12px", background: "rgba(248,81,73,.07)", border: "1px solid rgba(248,81,73,.25)", borderRadius: 8, fontSize: 12, color: "var(--accent-red)" }}>
+                ⚠️ Promoter pledge exceeds 20% — elevated risk of forced selling if stock falls sharply.
+              </div>
+            )}
+
+            {/* Dividend History */}
+            <div style={{ marginTop: 20 }}>
+              <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "var(--accent-gold)" }}>Dividend History</h4>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    {["FY", "DPS (₹)", "Yield %"].map((h) => (
+                      <th key={h} style={{ textAlign: "left", fontSize: 11, color: "var(--muted)", padding: "4px 0", fontWeight: 600 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {divHistory.map((d) => (
+                    <tr key={d.fy} style={{ borderTop: "1px solid var(--border)" }}>
+                      <td style={{ fontSize: 12, padding: "6px 0" }}>{d.fy}</td>
+                      <td style={{ fontSize: 12, fontWeight: 700, padding: "6px 0", color: "var(--accent-gold)" }}>₹{d.dps}</td>
+                      <td style={{ fontSize: 12, padding: "6px 0", color: "var(--muted)" }}>{d.yield}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -441,7 +681,7 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
             </table>
           </div>
 
-          {/* Balance Sheet */}
+          {/* Balance Sheet Snapshot */}
           <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: "var(--accent-purple)" }}>Balance Sheet Snapshot</h3>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -509,6 +749,50 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
                 stock.pe < 35 ? " the stock is trading near its fair value range." :
                   " the stock is pricing in significant future growth expectations."}
               Compare with sector average P/E before drawing conclusions.
+            </div>
+          </div>
+
+          {/* Compounded Growth Section */}
+          <div style={{ gridColumn: "1 / -1", background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: "var(--accent-gold)" }}>Compounded Growth Rates</h3>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+              <CAGRBox label="Revenue 3Y CAGR" value={`${rev3yCagr}%`} />
+              <CAGRBox label="Revenue 5Y CAGR" value={`${rev5yCagr}%`} />
+              <CAGRBox label="Profit 3Y CAGR" value={`${pat3yCagr}%`}
+                color={pat3yCagr > 15 ? "linear-gradient(135deg,#2a6e3f 0%,#3fb950 100%)" : "linear-gradient(135deg,#b8742a 0%,#e3a83d 100%)"} />
+              <CAGRBox label="Profit 5Y CAGR" value={`${pat5yCagr}%`}
+                color={pat5yCagr > 15 ? "linear-gradient(135deg,#2a6e3f 0%,#3fb950 100%)" : "linear-gradient(135deg,#b8742a 0%,#e3a83d 100%)"} />
+              <CAGRBox label="Stock Return 3Y" value={`${stockReturn3y}%`}
+                color="linear-gradient(135deg,#1a4a7a 0%,#58a6ff 100%)" />
+              <CAGRBox label="Stock Return 5Y" value={`${stockReturn5y}%`}
+                color="linear-gradient(135deg,#1a4a7a 0%,#58a6ff 100%)" />
+            </div>
+
+            {/* Return Ratios Over Time */}
+            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "var(--muted)" }}>Return Ratios Over Time</h4>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 500 }}>
+                <thead>
+                  <tr style={{ background: "var(--background)" }}>
+                    <th style={{ textAlign: "left" as const, padding: "8px 12px", fontSize: 11, color: "var(--muted)", fontWeight: 700 }}>Metric</th>
+                    {FY_YEARS.map((fy) => (
+                      <th key={fy} style={{ textAlign: "right" as const, padding: "8px 12px", fontSize: 11, color: "var(--muted)", fontWeight: 700 }}>{fy}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {["roe", "roce"].map((metric) => (
+                    <tr key={metric} style={{ borderTop: "1px solid var(--border)" }}>
+                      <td style={{ padding: "8px 12px", fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{metric.toUpperCase()} %</td>
+                      {roeRoceTrend.map((d) => (
+                        <td key={d.fy} style={{ padding: "8px 12px", fontSize: 12, fontWeight: 700, textAlign: "right" as const, color: "var(--accent-green)" }}>
+                          {(d as Record<string, number | string>)[metric]}%
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -792,6 +1076,321 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* P&L STATEMENT TAB */}
+      {activeTab === "pl" && (
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Profit & Loss Statement — {stock.name}</h3>
+            <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>All figures in ₹ Crore unless stated otherwise</p>
+          </div>
+
+          {plData.length > 0 ? (
+            <>
+              <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
+                    <thead>
+                      <tr style={{ background: "var(--background)" }}>
+                        <th style={{ textAlign: "left" as const, padding: "12px 16px", fontSize: 11, color: "var(--muted)", fontWeight: 700, minWidth: 180, position: "sticky" as const, left: 0, background: "var(--background)", zIndex: 1 }}>
+                          Particulars (₹ Cr)
+                        </th>
+                        {plData.map((r) => (
+                          <th key={r.fy} style={{ textAlign: "right" as const, padding: "12px 16px", fontSize: 11, color: "var(--muted)", fontWeight: 700, minWidth: 90 }}>{r.fy}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { key: "revenue", label: "Revenue", isSubtotal: false, isPct: false },
+                        { key: "expenses", label: "Expenses", isSubtotal: false, isPct: false },
+                        { key: "ebitda", label: "EBITDA", isSubtotal: true, isPct: false },
+                        { key: "ebitdaMargin", label: "EBITDA Margin %", isSubtotal: false, isPct: true },
+                        { key: "depreciation", label: "Depreciation", isSubtotal: false, isPct: false },
+                        { key: "ebit", label: "EBIT", isSubtotal: true, isPct: false },
+                        { key: "interest", label: "Interest", isSubtotal: false, isPct: false },
+                        { key: "pbt", label: "PBT", isSubtotal: true, isPct: false },
+                        { key: "taxRate", label: "Tax Rate %", isSubtotal: false, isPct: true },
+                        { key: "pat", label: "PAT (Net Profit)", isSubtotal: true, isPct: false },
+                        { key: "patMargin", label: "Net Profit Margin %", isSubtotal: false, isPct: true },
+                        { key: "eps", label: "EPS (₹)", isSubtotal: false, isPct: false, isEps: true },
+                        { key: "dps", label: "Dividend / Share (₹)", isSubtotal: false, isPct: false, isEps: true },
+                      ].map((row, rowIdx) => (
+                        <tr
+                          key={row.key}
+                          style={{
+                            borderTop: "1px solid var(--border)",
+                            background: row.isSubtotal
+                              ? "rgba(88,166,255,0.06)"
+                              : rowIdx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
+                          }}
+                        >
+                          <td style={{
+                            padding: "10px 16px", fontSize: 12,
+                            color: row.isPct ? "var(--accent-gold)" : row.isSubtotal ? "var(--foreground)" : "var(--muted)",
+                            fontWeight: row.isSubtotal ? 700 : 400,
+                            position: "sticky" as const, left: 0,
+                            background: row.isSubtotal ? "rgba(88,166,255,0.06)" : rowIdx % 2 === 0 ? "var(--card-bg)" : "rgba(255,255,255,0.015)",
+                            zIndex: 1,
+                          }}>
+                            {row.label}
+                          </td>
+                          {plData.map((d) => {
+                            const val = (d as unknown as Record<string, number>)[row.key];
+                            const formatted = (row as { isEps?: boolean }).isEps
+                              ? `₹${val.toFixed(2)}`
+                              : row.isPct
+                                ? `${val.toFixed(1)}%`
+                                : val.toLocaleString("en-IN");
+                            return (
+                              <td key={d.fy} style={{
+                                padding: "10px 16px", fontSize: 12, textAlign: "right" as const,
+                                fontWeight: row.isSubtotal ? 700 : 400,
+                                color: row.isPct ? "var(--accent-gold)" : row.isSubtotal ? "var(--foreground)" : "var(--foreground)",
+                              }}>
+                                {formatted}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* CAGR row below table */}
+              <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "var(--muted)" }}>Growth Rates</h4>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <CAGRBox label="Revenue 3Y CAGR" value={`${rev3yCagr}%`} />
+                  <CAGRBox label="Revenue 5Y CAGR" value={`${rev5yCagr}%`} />
+                  <CAGRBox label="Profit 3Y CAGR" value={`${pat3yCagr}%`}
+                    color={pat3yCagr > 15 ? "linear-gradient(135deg,#2a6e3f 0%,#3fb950 100%)" : undefined} />
+                  <CAGRBox label="Profit 5Y CAGR" value={`${pat5yCagr}%`}
+                    color={pat5yCagr > 15 ? "linear-gradient(135deg,#2a6e3f 0%,#3fb950 100%)" : undefined} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: 48, textAlign: "center", color: "var(--muted)" }}>
+              No financial data available for {stock.ticker}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* BALANCE SHEET TAB */}
+      {activeTab === "bs" && (
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Balance Sheet — {stock.name}</h3>
+            <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>All figures in ₹ Crore</p>
+          </div>
+
+          <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
+                <thead>
+                  <tr style={{ background: "var(--background)" }}>
+                    <th style={{ textAlign: "left" as const, padding: "12px 16px", fontSize: 11, color: "var(--muted)", fontWeight: 700, minWidth: 200, position: "sticky" as const, left: 0, background: "var(--background)", zIndex: 1 }}>
+                      Particulars (₹ Cr)
+                    </th>
+                    {bsData.map((r) => (
+                      <th key={r.fy} style={{ textAlign: "right" as const, padding: "12px 16px", fontSize: 11, color: "var(--muted)", fontWeight: 700, minWidth: 100 }}>{r.fy}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Section: Sources of Funds */}
+                  <tr style={{ background: "rgba(88,166,255,0.1)" }}>
+                    <td colSpan={6} style={{ padding: "8px 16px", fontSize: 11, fontWeight: 800, color: "var(--accent-blue)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+                      Sources of Funds
+                    </td>
+                  </tr>
+                  {[
+                    { key: "shareCapital", label: "Share Capital", isSubtotal: false },
+                    { key: "reserves", label: "Reserves & Surplus", isSubtotal: false },
+                    { key: "totalEquity", label: "Total Equity", isSubtotal: true },
+                    { key: "ltDebt", label: "Long-term Borrowings", isSubtotal: false },
+                    { key: "stDebt", label: "Short-term Borrowings", isSubtotal: false },
+                    { key: "totalDebt", label: "Total Debt", isSubtotal: true },
+                    { key: "otherLiab", label: "Other Liabilities", isSubtotal: false },
+                    { key: "totalLiab", label: "Total Liabilities", isSubtotal: true },
+                  ].map((row, rowIdx) => (
+                    <tr key={row.key} style={{
+                      borderTop: "1px solid var(--border)",
+                      background: row.isSubtotal ? "rgba(88,166,255,0.06)" : rowIdx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
+                    }}>
+                      <td style={{
+                        padding: "9px 16px", fontSize: 12,
+                        fontWeight: row.isSubtotal ? 700 : 400,
+                        color: row.isSubtotal ? "var(--foreground)" : "var(--muted)",
+                        position: "sticky" as const, left: 0,
+                        background: row.isSubtotal ? "rgba(88,166,255,0.06)" : "var(--card-bg)",
+                        zIndex: 1,
+                      }}>
+                        {row.label}
+                      </td>
+                      {bsData.map((d) => (
+                        <td key={d.fy} style={{ padding: "9px 16px", fontSize: 12, textAlign: "right" as const, fontWeight: row.isSubtotal ? 700 : 400 }}>
+                          {Math.round((d as unknown as Record<string, number>)[row.key]).toLocaleString("en-IN")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+
+                  {/* Section: Application of Funds */}
+                  <tr style={{ background: "rgba(63,185,80,0.1)" }}>
+                    <td colSpan={6} style={{ padding: "8px 16px", fontSize: 11, fontWeight: 800, color: "var(--accent-green)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+                      Application of Funds
+                    </td>
+                  </tr>
+                  {[
+                    { key: "netFixed", label: "Net Fixed Assets", isSubtotal: false },
+                    { key: "cwip", label: "CWIP (Capital Work in Progress)", isSubtotal: false },
+                    { key: "investments", label: "Investments", isSubtotal: false },
+                    { key: "tradeRec", label: "Trade Receivables", isSubtotal: false },
+                    { key: "inventories", label: "Inventories", isSubtotal: false },
+                    { key: "cash", label: "Cash & Equivalents", isSubtotal: false },
+                    { key: "otherCA", label: "Other Current Assets", isSubtotal: false },
+                    { key: "totalAssets", label: "Total Assets", isSubtotal: true },
+                  ].map((row, rowIdx) => (
+                    <tr key={row.key} style={{
+                      borderTop: "1px solid var(--border)",
+                      background: row.isSubtotal ? "rgba(63,185,80,0.06)" : rowIdx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
+                    }}>
+                      <td style={{
+                        padding: "9px 16px", fontSize: 12,
+                        fontWeight: row.isSubtotal ? 700 : 400,
+                        color: row.isSubtotal ? "var(--foreground)" : "var(--muted)",
+                        position: "sticky" as const, left: 0,
+                        background: row.isSubtotal ? "rgba(63,185,80,0.06)" : "var(--card-bg)",
+                        zIndex: 1,
+                      }}>
+                        {row.label}
+                      </td>
+                      {bsData.map((d) => (
+                        <td key={d.fy} style={{ padding: "9px 16px", fontSize: 12, textAlign: "right" as const, fontWeight: row.isSubtotal ? 700 : 400 }}>
+                          {Math.round((d as unknown as Record<string, number>)[row.key]).toLocaleString("en-IN")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CASH FLOW TAB */}
+      {activeTab === "cf" && (
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Cash Flow Statement — {stock.name}</h3>
+            <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>All figures in ₹ Crore</p>
+          </div>
+
+          {cfData.length > 0 ? (
+            <>
+              {/* Table */}
+              <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560 }}>
+                    <thead>
+                      <tr style={{ background: "var(--background)" }}>
+                        <th style={{ textAlign: "left" as const, padding: "12px 16px", fontSize: 11, color: "var(--muted)", fontWeight: 700, minWidth: 200, position: "sticky" as const, left: 0, background: "var(--background)", zIndex: 1 }}>
+                          Particulars (₹ Cr)
+                        </th>
+                        {cfData.map((r) => (
+                          <th key={r.fy} style={{ textAlign: "right" as const, padding: "12px 16px", fontSize: 11, color: "var(--muted)", fontWeight: 700, minWidth: 100 }}>{r.fy}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { key: "operating", label: "Cash from Operating", color: "var(--accent-green)" },
+                        { key: "investing", label: "Cash from Investing", color: "var(--accent-red)" },
+                        { key: "financing", label: "Cash from Financing", color: "var(--accent-blue)" },
+                        { key: "net", label: "Net Cash Flow", isSubtotal: true, color: "var(--foreground)" },
+                        { key: "fcf", label: "Free Cash Flow", isSubtotal: false, color: "var(--accent-gold)" },
+                      ].map((row, rowIdx) => (
+                        <tr key={row.key} style={{
+                          borderTop: "1px solid var(--border)",
+                          background: row.isSubtotal ? "rgba(88,166,255,0.06)" : rowIdx % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
+                        }}>
+                          <td style={{
+                            padding: "10px 16px", fontSize: 12,
+                            color: row.color,
+                            fontWeight: row.isSubtotal ? 700 : 400,
+                            position: "sticky" as const, left: 0,
+                            background: row.isSubtotal ? "rgba(88,166,255,0.06)" : "var(--card-bg)",
+                            zIndex: 1,
+                          }}>
+                            {row.label}
+                          </td>
+                          {cfData.map((d) => {
+                            const val = (d as unknown as Record<string, number>)[row.key];
+                            return (
+                              <td key={d.fy} style={{
+                                padding: "10px 16px", fontSize: 12, textAlign: "right" as const,
+                                fontWeight: row.isSubtotal ? 700 : 400,
+                                color: val >= 0 ? "var(--accent-green)" : "var(--accent-red)",
+                              }}>
+                                {val >= 0 ? "+" : ""}{val.toLocaleString("en-IN")}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Bar Chart */}
+              <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Cash Flow Breakdown by Year (₹ Cr)</h4>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={cfData} barGap={4} barCategoryGap="25%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="fy" tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--muted)" }} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
+                    <Tooltip
+                      contentStyle={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
+                      formatter={(v) => `₹${Number(v).toLocaleString("en-IN")} Cr`}
+                    />
+                    <Bar dataKey="operating" name="Operating" fill="#3fb950" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="investing" name="Investing" fill="#f85149" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="financing" name="Financing" fill="#58a6ff" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="fcf" name="Free CF" fill="#e3a83d" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Explanation */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {[
+                  { title: "Cash from Operating", color: "var(--accent-green)", desc: "Cash generated from core business operations — collections from customers minus payments to suppliers, employees, and taxes. The most important cash flow metric." },
+                  { title: "Cash from Investing", color: "var(--accent-red)", desc: "Cash spent on capital expenditure (CAPEX), acquisitions, or received from asset sales. Negative is normal for growing companies investing in future capacity." },
+                  { title: "Cash from Financing", color: "var(--accent-blue)", desc: "Cash flows from borrowings, repayment of debt, dividend payments, and share issuance/buyback activities." },
+                  { title: "Free Cash Flow (FCF)", color: "var(--accent-gold)", desc: "Operating Cash Flow minus Capex. Represents cash available for shareholders after maintaining and growing the business. Positive and growing FCF is a quality signal." },
+                ].map((item) => (
+                  <div key={item.title} style={{ padding: "12px 14px", background: "var(--background)", border: "1px solid var(--border)", borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: item.color, marginBottom: 6 }}>{item.title}</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.6 }}>{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: 48, textAlign: "center", color: "var(--muted)" }}>
+              No financial data available for {stock.ticker}
+            </div>
+          )}
         </div>
       )}
     </div>

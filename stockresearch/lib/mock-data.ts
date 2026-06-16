@@ -630,6 +630,276 @@ export const STOCKS: Stock[] = [
     diiHolding: 18.30,
     publicHolding: 14.40,
   },
+  {
+    ticker: "TITAN",
+    name: "Titan Company Ltd",
+    exchange: "NSE",
+    sector: "Consumer Discretionary",
+    industry: "Jewellery & Watches",
+    price: 3412.55,
+    change: 28.70,
+    changePct: 0.85,
+    marketCap: 303210,
+    pe: 78.4,
+    pb: 19.2,
+    roe: 25.8,
+    roce: 33.4,
+    debtToEquity: 0.04,
+    eps: 43.52,
+    dividendYield: 0.29,
+    high52w: 3886.00,
+    low52w: 2794.45,
+    volume: 1234000,
+    avgVolume: 1120000,
+    description: "Titan Company is India's largest consumer lifestyle company, with brands like Tanishq (jewellery), Titan (watches), Fastrack, and Eyeplus. Part of the Tata Group.",
+    promoterHolding: 52.90,
+    fiiHolding: 18.40,
+    diiHolding: 19.30,
+    publicHolding: 9.40,
+  },
+  {
+    ticker: "PIDILITIND",
+    name: "Pidilite Industries Ltd",
+    exchange: "NSE",
+    sector: "Materials",
+    industry: "Adhesives & Chemicals",
+    price: 2834.90,
+    change: 15.35,
+    changePct: 0.54,
+    marketCap: 143870,
+    pe: 72.8,
+    pb: 18.5,
+    roe: 25.5,
+    roce: 34.2,
+    debtToEquity: 0.00,
+    eps: 38.94,
+    dividendYield: 0.63,
+    high52w: 3192.00,
+    low52w: 2380.70,
+    volume: 456000,
+    avgVolume: 420000,
+    description: "Pidilite is India's dominant adhesives and sealants company, maker of Fevicol, Dr. Fixit, M-Seal. Near-monopoly in construction adhesives with 70%+ market share.",
+    promoterHolding: 70.00,
+    fiiHolding: 11.20,
+    diiHolding: 10.30,
+    publicHolding: 8.50,
+  },
+  {
+    ticker: "BAJAJFINSV",
+    name: "Bajaj Finserv Ltd",
+    exchange: "NSE",
+    sector: "Financial Services",
+    industry: "Diversified Financial",
+    price: 1867.45,
+    change: -12.30,
+    changePct: -0.65,
+    marketCap: 297850,
+    pe: 31.2,
+    pb: 4.8,
+    roe: 15.4,
+    roce: 11.2,
+    debtToEquity: 0.23,
+    eps: 59.85,
+    dividendYield: 0.05,
+    high52w: 2259.70,
+    low52w: 1597.00,
+    volume: 2345000,
+    avgVolume: 2180000,
+    description: "Bajaj Finserv is a diversified financial services conglomerate with stakes in Bajaj Finance (NBFC), Bajaj Allianz Life Insurance, and Bajaj Allianz General Insurance.",
+    promoterHolding: 60.70,
+    fiiHolding: 16.80,
+    diiHolding: 13.40,
+    publicHolding: 9.10,
+  },
+  {
+    ticker: "TECHM",
+    name: "Tech Mahindra Ltd",
+    exchange: "NSE",
+    sector: "Information Technology",
+    industry: "IT Services",
+    price: 1398.75,
+    change: 22.45,
+    changePct: 1.63,
+    marketCap: 136780,
+    pe: 32.4,
+    pb: 4.6,
+    roe: 14.2,
+    roce: 18.8,
+    debtToEquity: 0.11,
+    eps: 43.18,
+    dividendYield: 3.58,
+    high52w: 1807.35,
+    low52w: 1096.50,
+    volume: 4567000,
+    avgVolume: 4120000,
+    description: "Tech Mahindra is an IT services company with a strong focus on telecom (BU1 vertical) and 5G. Part of the Mahindra Group, with 150,000+ employees in 90+ countries.",
+    promoterHolding: 35.10,
+    fiiHolding: 26.80,
+    diiHolding: 20.40,
+    publicHolding: 17.70,
+  },
+  {
+    ticker: "POWERGRID",
+    name: "Power Grid Corporation of India Ltd",
+    exchange: "NSE",
+    sector: "Utilities",
+    industry: "Power Transmission",
+    price: 298.45,
+    change: 1.85,
+    changePct: 0.62,
+    marketCap: 277640,
+    pe: 17.8,
+    pb: 3.1,
+    roe: 17.5,
+    roce: 10.2,
+    debtToEquity: 1.67,
+    eps: 16.77,
+    dividendYield: 5.25,
+    high52w: 366.50,
+    low52w: 235.85,
+    volume: 9876000,
+    avgVolume: 9230000,
+    description: "Power Grid Corp is India's central transmission utility, owning and operating ~170,000 circuit km of transmission lines. A Government of India enterprise.",
+    promoterHolding: 51.30,
+    fiiHolding: 16.80,
+    diiHolding: 18.60,
+    publicHolding: 13.30,
+  },
+  {
+    ticker: "DRREDDY",
+    name: "Dr. Reddy's Laboratories Ltd",
+    exchange: "NSE",
+    sector: "Healthcare",
+    industry: "Pharmaceutical",
+    price: 1198.65,
+    change: -8.90,
+    changePct: -0.74,
+    marketCap: 99870,
+    pe: 18.4,
+    pb: 3.2,
+    roe: 17.4,
+    roce: 22.8,
+    debtToEquity: 0.12,
+    eps: 65.14,
+    dividendYield: 0.67,
+    high52w: 1440.00,
+    low52w: 1014.25,
+    volume: 1234000,
+    avgVolume: 1120000,
+    description: "Dr. Reddy's is India's 2nd largest pharma company. Strong in US generics, biopharmaceuticals, and APIs. Known for complex generics and biosimilars strategy.",
+    promoterHolding: 26.70,
+    fiiHolding: 28.40,
+    diiHolding: 22.90,
+    publicHolding: 22.00,
+  },
+  {
+    ticker: "ADANIENT",
+    name: "Adani Enterprises Ltd",
+    exchange: "NSE",
+    sector: "Industrials",
+    industry: "Diversified Industrials",
+    price: 2378.90,
+    change: 45.20,
+    changePct: 1.94,
+    marketCap: 270450,
+    pe: 52.6,
+    pb: 5.8,
+    roe: 11.0,
+    roce: 8.4,
+    debtToEquity: 1.78,
+    eps: 45.23,
+    dividendYield: 0.04,
+    high52w: 3743.00,
+    low52w: 1840.10,
+    volume: 3456000,
+    avgVolume: 3120000,
+    description: "Adani Enterprises is the flagship company of the Adani Group — a diversified conglomerate in airports, green energy, data centers, roads, and defense manufacturing.",
+    promoterHolding: 72.60,
+    fiiHolding: 11.20,
+    diiHolding: 8.60,
+    publicHolding: 7.60,
+  },
+  {
+    ticker: "LTIM",
+    name: "LTIMindtree Ltd",
+    exchange: "NSE",
+    sector: "Information Technology",
+    industry: "IT Services",
+    price: 4867.30,
+    change: 67.80,
+    changePct: 1.41,
+    marketCap: 143890,
+    pe: 29.4,
+    pb: 6.8,
+    roe: 23.2,
+    roce: 30.8,
+    debtToEquity: 0.00,
+    eps: 165.55,
+    dividendYield: 1.85,
+    high52w: 6768.65,
+    low52w: 4082.00,
+    volume: 876000,
+    avgVolume: 810000,
+    description: "LTIMindtree (formed from merger of L&T Infotech and Mindtree) is a top-10 Indian IT services company with strong BFSI and manufacturing verticals.",
+    promoterHolding: 68.60,
+    fiiHolding: 13.80,
+    diiHolding: 10.40,
+    publicHolding: 7.20,
+  },
+  {
+    ticker: "ZOMATO",
+    name: "Zomato Ltd",
+    exchange: "NSE",
+    sector: "Consumer Discretionary",
+    industry: "Food Delivery",
+    price: 234.75,
+    change: 5.65,
+    changePct: 2.47,
+    marketCap: 208890,
+    pe: 312.4,
+    pb: 8.9,
+    roe: 2.8,
+    roce: 3.6,
+    debtToEquity: 0.00,
+    eps: 0.75,
+    dividendYield: 0.00,
+    high52w: 304.70,
+    low52w: 127.90,
+    volume: 45678000,
+    avgVolume: 42300000,
+    description: "Zomato is India's largest food delivery platform with 55M+ monthly ordering users. Recently expanded into quick commerce (Blinkit) which is now the primary growth driver.",
+    promoterHolding: 0.00,
+    fiiHolding: 38.40,
+    diiHolding: 25.80,
+    publicHolding: 35.80,
+  },
+  {
+    ticker: "COALINDIA",
+    name: "Coal India Ltd",
+    exchange: "NSE",
+    sector: "Energy",
+    industry: "Coal Mining",
+    price: 387.45,
+    change: -3.25,
+    changePct: -0.83,
+    marketCap: 238420,
+    pe: 8.6,
+    pb: 4.2,
+    roe: 48.8,
+    roce: 66.4,
+    debtToEquity: 0.00,
+    eps: 45.05,
+    dividendYield: 6.45,
+    high52w: 543.55,
+    low52w: 348.70,
+    volume: 8765000,
+    avgVolume: 8120000,
+    description: "Coal India is the world's largest coal producer and a Government of India enterprise. Accounts for ~80% of India's coal production with significant dividend payouts.",
+    promoterHolding: 63.10,
+    fiiHolding: 6.80,
+    diiHolding: 17.40,
+    publicHolding: 12.70,
+  },
 ];
 
 export const NEWS_ARTICLES: NewsArticle[] = [
@@ -1098,4 +1368,249 @@ export function formatCrore(value: number): string {
 
 export function formatPrice(value: number): string {
   return `₹${value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+export function calcCAGR(start: number, end: number, years: number): number {
+  if (start <= 0 || years <= 0) return 0;
+  return (Math.pow(end / start, 1 / years) - 1) * 100;
+}
+
+export type PLRow = {
+  year: string;
+  revenue: number;
+  expenses: number;
+  ebitda: number;
+  ebitdaMargin: number;
+  depreciation: number;
+  ebit: number;
+  interest: number;
+  pbt: number;
+  tax: number;
+  pat: number;
+  patMargin: number;
+  eps: number;
+  dps: number; // dividend per share
+};
+
+export type BSRow = {
+  year: string;
+  shareCapital: number;
+  reserves: number;
+  totalEquity: number;
+  longTermDebt: number;
+  shortTermDebt: number;
+  totalDebt: number;
+  otherLiabilities: number;
+  totalLiabilities: number;
+  netFixedAssets: number;
+  cwip: number;
+  investments: number;
+  tradeReceivables: number;
+  inventories: number;
+  cash: number;
+  otherCurrentAssets: number;
+  totalAssets: number;
+};
+
+export type CFRow = {
+  year: string;
+  operating: number;
+  investing: number;
+  financing: number;
+  netCashFlow: number;
+  freeCashFlow: number; // operating + capex (investing is negative)
+};
+
+export type DividendRecord = {
+  year: string;
+  dps: number;       // dividend per share (Rs)
+  yield: number;     // yield at year-end price (%)
+  exDate: string;
+};
+
+export function generatePL(ticker: string): PLRow[] {
+  const fd = FINANCIAL_DATA[ticker];
+  if (!fd) return [];
+  return fd.annualRevenue.map((ar) => {
+    const revenue = ar.revenue;
+    const ebitda = ar.ebitda;
+    const ebitdaMargin = (ebitda / revenue) * 100;
+    const depreciation = ebitda * 0.22;
+    const ebit = ebitda - depreciation;
+    const stock = getStockByTicker(ticker);
+    const deRatio = stock?.debtToEquity ?? 0.3;
+    const interest = ebit * 0.12 * Math.min(deRatio, 2);
+    const pbt = ebit - interest;
+    const taxRate = 0.25;
+    const pat = ar.profit;
+    const tax = pbt - pat;
+    const shares = (stock?.marketCap ?? 1000) / (stock?.price ?? 100);
+    const eps = (pat / shares) * 100;
+    const dps = eps * (stock?.dividendYield ?? 0.5) / 100 * (stock?.price ?? 100) / eps;
+    return {
+      year: ar.year,
+      revenue,
+      expenses: revenue - ebitda,
+      ebitda,
+      ebitdaMargin: parseFloat(ebitdaMargin.toFixed(1)),
+      depreciation: parseFloat(depreciation.toFixed(0)),
+      ebit: parseFloat(ebit.toFixed(0)),
+      interest: parseFloat(interest.toFixed(0)),
+      pbt: parseFloat(pbt.toFixed(0)),
+      tax: parseFloat(tax.toFixed(0)),
+      pat,
+      patMargin: parseFloat(((pat / revenue) * 100).toFixed(1)),
+      eps: parseFloat(eps.toFixed(2)),
+      dps: parseFloat((eps * 0.18).toFixed(2)),
+    };
+  });
+}
+
+export function generateBS(ticker: string): BSRow[] {
+  const fd = FINANCIAL_DATA[ticker];
+  const stock = getStockByTicker(ticker);
+  if (!fd || !stock) return [];
+  return fd.annualRevenue.map((ar, i) => {
+    const scaleFactor = 0.8 + i * 0.05;
+    const mcap = stock.marketCap * scaleFactor;
+    const shareCapital = Math.round(mcap * 0.003);
+    const reserves = Math.round(mcap * 0.34);
+    const totalEquity = shareCapital + reserves;
+    const longTermDebt = Math.round(mcap * 0.18 * (1 - i * 0.03));
+    const shortTermDebt = Math.round(mcap * 0.05);
+    const totalDebt = longTermDebt + shortTermDebt;
+    const otherLiabilities = Math.round(mcap * 0.12);
+    const totalLiabilities = totalEquity + totalDebt + otherLiabilities;
+    const netFixedAssets = Math.round(mcap * 0.38);
+    const cwip = Math.round(mcap * 0.06);
+    const investments = Math.round(mcap * 0.15);
+    const tradeReceivables = Math.round(ar.revenue * 0.06);
+    const inventories = Math.round(ar.revenue * 0.07);
+    const cash = Math.round(mcap * 0.07 * (1 + i * 0.1));
+    const otherCurrentAssets = totalLiabilities - netFixedAssets - cwip - investments - tradeReceivables - inventories - cash;
+    return {
+      year: ar.year,
+      shareCapital, reserves, totalEquity,
+      longTermDebt, shortTermDebt, totalDebt,
+      otherLiabilities, totalLiabilities,
+      netFixedAssets, cwip, investments,
+      tradeReceivables, inventories, cash,
+      otherCurrentAssets: Math.max(0, otherCurrentAssets),
+      totalAssets: totalLiabilities,
+    };
+  });
+}
+
+export function generateCF(ticker: string): CFRow[] {
+  const fd = FINANCIAL_DATA[ticker];
+  if (!fd) return [];
+  return fd.annualRevenue.map((ar) => {
+    const operating = Math.round(ar.ebitda * 0.85);
+    const investing = -Math.round(ar.ebitda * 0.65);
+    const financing = Math.round((operating + investing) * -0.4);
+    const netCashFlow = operating + investing + financing;
+    const freeCashFlow = operating + Math.round(investing * 0.5); // operating - maintenance capex
+    return {
+      year: ar.year,
+      operating, investing, financing, netCashFlow, freeCashFlow,
+    };
+  });
+}
+
+export function generateDividendHistory(ticker: string): DividendRecord[] {
+  const stock = getStockByTicker(ticker);
+  if (!stock || stock.dividendYield === 0) return [];
+  const years = ["FY21", "FY22", "FY23", "FY24", "FY25"];
+  const basePrice = stock.price * 0.65;
+  return years.map((year, i) => {
+    const price = basePrice + i * ((stock.price - basePrice) / 4);
+    const dps = parseFloat((stock.eps * 0.18 * (0.9 + i * 0.03)).toFixed(2));
+    const yld = parseFloat(((dps / price) * 100).toFixed(2));
+    const month = ["Jun", "Aug", "Jul", "Jun", "Jun"][i];
+    return {
+      year,
+      dps,
+      yield: yld,
+      exDate: `${15 + i} ${month} 202${1 + i}`,
+    };
+  });
+}
+
+export type ShareholderTrendRow = {
+  quarter: string;
+  promoter: number;
+  promoterPledged: number;
+  fii: number;
+  dii: number;
+  public: number;
+  totalShareholders: number;
+};
+
+export function generateShareholderTrend(ticker: string): ShareholderTrendRow[] {
+  const stock = getStockByTicker(ticker);
+  if (!stock) return [];
+  const quarters = ["Mar 2024", "Jun 2024", "Sep 2024", "Dec 2024", "Mar 2025"];
+  return quarters.map((q, i) => ({
+    quarter: q,
+    promoter: parseFloat((stock.promoterHolding + (i - 2) * 0.1).toFixed(2)),
+    promoterPledged: parseFloat((stock.promoterHolding * 0.07 * (1 - i * 0.05)).toFixed(2)),
+    fii: parseFloat((stock.fiiHolding + (i - 2) * 0.15).toFixed(2)),
+    dii: parseFloat((stock.diiHolding + (i - 2) * -0.08).toFixed(2)),
+    public: parseFloat((stock.publicHolding + (i - 2) * -0.07).toFixed(2)),
+    totalShareholders: Math.round(850000 + i * 45000 + Math.random() * 20000),
+  }));
+}
+
+export type HistoricalRatios = {
+  year: string;
+  pe: number;
+  pb: number;
+  roe: number;
+  roce: number;
+  eps: number;
+  dividendYield: number;
+};
+
+export function generateHistoricalRatios(ticker: string): HistoricalRatios[] {
+  const stock = getStockByTicker(ticker);
+  if (!stock) return [];
+  return ["FY21", "FY22", "FY23", "FY24", "FY25"].map((year, i) => ({
+    year,
+    pe: parseFloat((stock.pe * (0.75 + i * 0.07)).toFixed(1)),
+    pb: parseFloat((stock.pb * (0.72 + i * 0.08)).toFixed(1)),
+    roe: parseFloat((stock.roe * (0.8 + i * 0.06)).toFixed(1)),
+    roce: parseFloat((stock.roce * (0.78 + i * 0.07)).toFixed(1)),
+    eps: parseFloat((stock.eps * (0.55 + i * 0.12)).toFixed(2)),
+    dividendYield: parseFloat((stock.dividendYield * (1.1 - i * 0.05)).toFixed(2)),
+  }));
+}
+
+export function getRevenueCagr(ticker: string, years: 3 | 5): number {
+  const fd = FINANCIAL_DATA[ticker];
+  if (!fd || fd.annualRevenue.length < years) return 0;
+  const arr = fd.annualRevenue;
+  const start = arr[arr.length - 1 - years].revenue;
+  const end = arr[arr.length - 1].revenue;
+  return parseFloat(calcCAGR(start, end, years).toFixed(1));
+}
+
+export function getProfitCagr(ticker: string, years: 3 | 5): number {
+  const fd = FINANCIAL_DATA[ticker];
+  if (!fd || fd.annualRevenue.length < years) return 0;
+  const arr = fd.annualRevenue;
+  const start = arr[arr.length - 1 - years].profit;
+  const end = arr[arr.length - 1].profit;
+  return parseFloat(calcCAGR(start, end, years).toFixed(1));
+}
+
+export function getStockReturn(ticker: string, years: 3 | 5): number {
+  const stock = getStockByTicker(ticker);
+  if (!stock) return 0;
+  const fd = FINANCIAL_DATA[ticker];
+  if (!fd || fd.priceHistory.length < 2) return 0;
+  const hist = fd.priceHistory;
+  const targetIndex = hist.length - 1 - years * 365;
+  const startPrice = targetIndex >= 0 ? hist[Math.max(0, targetIndex)].price : hist[0].price;
+  const endPrice = hist[hist.length - 1].price;
+  return parseFloat(calcCAGR(startPrice, endPrice, years).toFixed(1));
 }

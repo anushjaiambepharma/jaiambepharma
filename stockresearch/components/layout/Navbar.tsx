@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Search, TrendingUp, Bell, BookOpen, BarChart2, Newspaper, StickyNote, Home, X
+  Search, TrendingUp, Bell, BookOpen, BarChart2, Newspaper, StickyNote, Home, X, SlidersHorizontal
 } from "lucide-react";
 import { searchStocks } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ export default function Navbar() {
 
   const NAV_LINKS = [
     { href: "/", label: "Dashboard", icon: Home },
+    { href: "/screener", label: "Screener", icon: SlidersHorizontal },
     { href: "/news", label: "News Hub", icon: Newspaper },
     { href: "/learn", label: "Learn", icon: BookOpen },
     { href: "/notebook", label: "Notebook", icon: StickyNote },
