@@ -5,7 +5,7 @@ import {
   TrendingUp, TrendingDown, Star, StarOff, FileText,
   BarChart2, Globe, AlertTriangle,
   CheckSquare, Square, PenLine, ExternalLink, Activity,
-  DollarSign, PieChart, ArrowUpRight, ArrowDownRight
+  DollarSign, PieChart, ArrowUpRight, ArrowDownRight, Zap
 } from "lucide-react";
 import {
   getStockByTicker, getNewsByTicker, getFilingsByTicker,
@@ -17,18 +17,20 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   Cell
 } from "recharts";
+import LiveDataPanel from "@/components/company/LiveDataPanel";
 
 const TABS = [
+  { id: "live", label: "Live + AI", icon: Zap },
   { id: "overview", label: "Overview", icon: BarChart2 },
   { id: "news", label: "News", icon: Activity },
   { id: "fundamentals", label: "Fundamentals", icon: TrendingUp },
   { id: "filings", label: "Filings", icon: FileText },
   { id: "peers", label: "Peer Comparison", icon: Globe },
-  { id: "checklist", label: "Research Checklist", icon: CheckSquare },
-  { id: "notes", label: "My Notes", icon: PenLine },
   { id: "pl", label: "P&L Statement", icon: DollarSign },
   { id: "bs", label: "Balance Sheet", icon: PieChart },
   { id: "cf", label: "Cash Flow", icon: ArrowUpRight },
+  { id: "checklist", label: "Research Checklist", icon: CheckSquare },
+  { id: "notes", label: "My Notes", icon: PenLine },
 ];
 
 const RESEARCH_CHECKLIST = [
@@ -171,7 +173,7 @@ function calcCAGR(start: number, end: number, years: number) {
 export default function CompanyPage({ params }: { params: Promise<{ ticker: string }> }) {
   const { ticker } = use(params);
   const stock = getStockByTicker(ticker.toUpperCase());
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("live");
   const [watchlisted, setWatchlisted] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [noteText, setNoteText] = useState("");
@@ -372,31 +374,42 @@ export default function CompanyPage({ params }: { params: Promise<{ ticker: stri
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--border)", paddingBottom: 0, overflowX: "auto" }}>
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "10px 16px",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === id ? "2px solid var(--accent-blue)" : "2px solid transparent",
-              color: activeTab === id ? "var(--accent-blue)" : "var(--muted)",
-              fontSize: 13, fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.15s",
-              whiteSpace: "nowrap" as const,
-              marginBottom: -1,
-            }}
-          >
-            <Icon size={13} />
-            {label}
-          </button>
-        ))}
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const isLive = id === "live";
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "10px 16px",
+                background: isLive && isActive ? "linear-gradient(135deg, rgba(227,179,65,.15), rgba(88,166,255,.1))" : "none",
+                border: "none",
+                borderBottom: isActive ? `2px solid ${isLive ? "var(--accent-gold)" : "var(--accent-blue)"}` : "2px solid transparent",
+                color: isActive ? (isLive ? "var(--accent-gold)" : "var(--accent-blue)") : "var(--muted)",
+                fontSize: 13, fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.15s",
+                whiteSpace: "nowrap" as const,
+                marginBottom: -1,
+                borderRadius: isLive ? "6px 6px 0 0" : undefined,
+              }}
+            >
+              <Icon size={13} />
+              {label}
+              {isLive && <span style={{ fontSize: 9, background: "var(--accent-gold)", color: "var(--background)", borderRadius: 3, padding: "1px 4px", fontWeight: 800, letterSpacing: "0.05em" }}>LIVE</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* TAB CONTENT */}
+
+      {/* LIVE + AI TAB */}
+      {activeTab === "live" && (
+        <LiveDataPanel ticker={stock.ticker} mockStock={{ pe: stock.pe, roe: stock.roe, roce: stock.roce, debtToEquity: stock.debtToEquity, marketCap: stock.marketCap, sector: stock.sector }} />
+      )}
 
       {/* OVERVIEW TAB */}
       {activeTab === "overview" && financials && (
