@@ -115,7 +115,17 @@ export class PharmaNetClient {
 
     return {
       pageUrl: url,
-      hiddenFields: extractAllHiddenFields(resultHtml),
+      // The grid's checkboxes/buttons live inside <select> controls too (plant/doc
+      // type/division/customer). Those never show up in extractAllHiddenFields
+      // since they aren't <input type="hidden">, but ASP.NET still needs their
+      // current values on the follow-up "View Report" postback or it 500s.
+      hiddenFields: {
+        ...extractAllHiddenFields(resultHtml),
+        'ctl00$ConPhameNet$ddlPlant': plant,
+        'ctl00$ConPhameNet$ddlDocType': DOC_TYPE_CODE[docType] || docType,
+        'ctl00$ConPhameNet$ddlDivision': DIVISION_CODE[division] || DIVISION_CODE.ALL,
+        'ctl00$ConPhameNet$ddlCustomer': 'ALL',
+      },
       rows: parseGridRows(resultHtml, 'ctl00_ConPhameNet_gvTransactionDetails', TRANSACTION_COLUMNS),
     };
   }
@@ -143,33 +153,51 @@ export class PharmaNetClient {
 
     return {
       pageUrl: url,
-      hiddenFields: extractAllHiddenFields(resultHtml),
+      hiddenFields: {
+        ...extractAllHiddenFields(resultHtml),
+        'ctl00$ConPhameNet$ddlPlant': plant,
+        'ctl00$ConPhameNet$ddlType': INVOICE_TYPE_CODE[invoiceType] || INVOICE_TYPE_CODE.ALL,
+        'ctl00$ConPhameNet$ddlCustomer': 'ALL',
+      },
       rows: parseGridRows(resultHtml, 'ctl00_ConPhameNet_gvTransactionDetails', INVOICE_COLUMNS),
     };
   }
 
-  /** Select one grid row's checkbox and trigger the "View Report" AJAX postback. */
+  /**
+   * Select one grid row's checkbox and trigger the "View Report" postback.
+   *
+   * This must be a normal (synchronous) form submit, not the ASP.NET AJAX
+   * partial-postback (UpdatePanel) request: live testing showed the AJAX path
+   * returns a bare "0|error|500||" delta for this control, while submitting
+   * btnViewReport as a plain HTML form post returns the full re-rendered page
+   * with the same window.open(...) startup script the browser would receive.
+   */
   async viewReport(pageUrl, hiddenFields, checkboxName) {
     const body = new URLSearchParams({
       ...hiddenFields,
-      'ctl00$ScriptManager1': 'ctl00$ConPhameNet$UpdatePanel4|ctl00$ConPhameNet$btnViewReport',
       [checkboxName]: 'on',
-      __ASYNCPOST: 'true',
       'ctl00$ConPhameNet$btnViewReport': 'View Report',
     });
     const resp = await this.request(pageUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-MicrosoftAjax': 'Delta=true',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     });
     const text = await resp.text();
     const reportUrl = extractViewReportUrl(text);
     if (!reportUrl) {
       throw new PharmaNetError(STATUS.FAILED_PDF_ERROR, 'View Report did not return a document URL.');
+    }
+    // PharmaNET embeds the row's identifying values (customer/doc no/etc.) as
+    // ",VALUE," query params. If row resolution silently fails server-side it
+    // still returns 200 + a PDF, just a blank template with none of those
+    // values filled in — so an empty bracket here means "wrong document",
+    // not "no document", and must be treated as a hard failure.
+    if (/=,,/.test(reportUrl) || /=,(&|$)/.test(reportUrl)) {
+      throw new PharmaNetError(
+        STATUS.FAILED_PDF_ERROR,
+        'View Report resolved to a document URL with missing identifiers; refusing to download a possibly blank/incorrect PDF.'
+      );
     }
     return reportUrl;
   }

@@ -85,32 +85,55 @@ supplies them in the browser for each run, and they're forwarded once to
 `/api/run-all` over HTTPS and never logged server-side (see `run-all.js`,
 which only logs the error message on failure, never the request body).
 
-## Known limitations / what to verify against the live site
+## Known limitations / what's verified against the live site
 
-This was built from a detailed technical spec (field IDs, doc-type/division
-codes, AJAX postback shape) rather than against the live, authenticated
-PharmaNET portal — there were no credentials available to test the scraping
-flow end-to-end in this environment. Treat `src/pharmanetClient.js` and
-`src/aspxForm.js` as the first integration pass and verify against your real
-account before relying on it for production volume:
+This was first built from a detailed technical spec, then verified and fixed
+against the real, authenticated PharmaNET portal:
 
-- **Login success detection** (`PharmaNetClient.login`) currently checks
-  whether the `LogPhNet$UserName` field is still present in the post-login
-  HTML. Confirm this correctly distinguishes success from failure on the
-  real site.
-- **GridView row parsing** (`parseGridRows`) assumes the first `<td>` in each
-  data row is the checkbox and the rest map 1:1 to the documented columns in
-  order. If PharmaNET's actual markup nests extra cells/spans, adjust the
-  `columns` arrays passed in `pharmanetClient.js`.
-- **AJAX "View Report" postback** assumes the exact `ScriptManager1` /
-  `__ASYNCPOST` / header shape given in the spec. If PharmaNET returns a
-  different delta format, `extractViewReportUrl` (regex on `window.open(...)`)
-  is the single place to adjust.
+**Verified working end-to-end (login → search → view report → PDF download):**
+
+- **Login** (`PharmaNetClient.login`) — confirmed correct: a successful login
+  redirects to `frmMainPage.aspx`; the `LogPhNet$UserName`-presence check
+  correctly distinguishes success from failure.
+- **GridView row parsing** (`parseGridRows`) — fixed a bug where the header
+  row's "select all" checkbox (`<th>`-only row) was mis-parsed as a data row.
+  Confirmed against a real 4,775-row search result that real customer
+  names/document numbers/dates now parse correctly.
+- **CREDIT_NOTE / CREDIT_NOTE_TAX / DEBIT_NOTE / DEBIT_NOTE_TAX / RATE_CREDIT /
+  RATE_DEBIT downloads** (`frmRptTRANSACTIONS.aspx`) — fully working. The
+  "View Report" step turned out to need a normal synchronous form submit of
+  `btnViewReport` (not the AJAX `UpdatePanel` partial-postback originally
+  assumed from the spec — that path returns a bare `500` error on this site).
+  Real PDFs have been downloaded and verified for multiple rows.
+- **Search field IDs/values** (`ddlPlant`, `ddlDocType`, `ddlDivision`, doc
+  type and division codes in `constants.js`) — all confirmed to match the
+  live dropdowns exactly.
+
+**Known not to work — do not rely on yet:**
+
+- **Plain `INVOICE` bulk download** (`FrmCustomerInvoicePrint.aspx`) is
+  **disabled** in `runner.js` (rows are logged as `NOT_IMPLEMENTED`). Live
+  testing showed the row-to-report mapping is broken: triggering "View" for a
+  specific invoice row (via either the per-row `lbView` link or the
+  checkbox+`btnViewReport` button) returns a `200` with a **structurally
+  valid but blank PDF template** — `Cust`/`Plnt`/`DocNo` come back empty in
+  the `frmViewReport.aspx` query string instead of erroring. The credit/debit
+  page passes those identifiers through a `GridView.DataKeys`-style
+  mechanism that the invoice page apparently doesn't expose the same way; the
+  real lookup mechanism needs a captured browser network trace (e.g. a HAR
+  file from clicking "View" on a real invoice) to reverse-engineer correctly.
+  `PharmaNetClient.viewReport()` also now hard-fails on any report URL with
+  blank bracketed identifiers (`=,,` or `=,&`), so even if this path is
+  re-enabled by mistake it won't silently ship a wrong file.
+- **`searchInvoices()` itself works** (search/filter/grid-parsing on the
+  invoice print page is confirmed correct — only the per-row "View" action is
+  broken), so it's reusable once the report-URL mechanism is solved.
 - **Invoice/order generation** (`Invoice_Header` / `Invoice_Items` sheets) is
-  intentionally **not implemented** yet — the spec explicitly defers this
-  until the live PharmaNET order-creation workflow has been analysed. Only
-  bulk **download** (`Download_Documents` sheet) is wired up end-to-end.
+  intentionally **not implemented** — the spec explicitly defers this until
+  the live PharmaNET order-creation workflow has been analysed.
 - **Cloudflare Worker execution limits**: the current design processes an
-  entire Run All synchronously in one request (matches the "small/medium
-  file" recommendation in the spec). For very large batches, move to the
-  Queues + R2 + D1 job-based design instead of raising timeouts.
+  entire Run All synchronously in one request. A single transaction search
+  with a wide date range can return a 9+ MB HTML response (4,775 rows seen
+  live) — for large batches/date ranges, watch Worker CPU/memory limits and
+  consider narrowing `FromDate`/`ToDate` per group, or moving to the
+  Queues + R2 + D1 job-based design for very large batches.

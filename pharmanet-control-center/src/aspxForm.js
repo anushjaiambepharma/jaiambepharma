@@ -48,11 +48,6 @@ export function parseGridRows(html, gridId, columns) {
   let rowMatch;
   while ((rowMatch = rowRegex.exec(tableMatch[1]))) {
     const rowHtml = rowMatch[1];
-    const checkboxMatch = rowHtml.match(/<input\b[^>]*type=["']checkbox["'][^>]*>/i);
-    if (!checkboxMatch) continue; // header row, footer row, or "no records" row
-    const nameMatch = checkboxMatch[0].match(/\bname=["']([^"']+)["']/i);
-    if (!nameMatch) continue;
-    const checkboxName = nameMatch[1];
 
     const cellRegex = /<td\b[^>]*>([\s\S]*?)<\/td>/gi;
     const cells = [];
@@ -60,6 +55,13 @@ export function parseGridRows(html, gridId, columns) {
     while ((cellMatch = cellRegex.exec(rowHtml))) {
       cells.push(stripTags(cellMatch[1]));
     }
+    if (cells.length === 0) continue; // header row (<th>) or footer row, not a data row
+
+    const checkboxMatch = rowHtml.match(/<input\b[^>]*type=["']checkbox["'][^>]*>/i);
+    if (!checkboxMatch) continue; // "no records found" row etc.
+    const nameMatch = checkboxMatch[0].match(/\bname=["']([^"']+)["']/i);
+    if (!nameMatch) continue;
+    const checkboxName = nameMatch[1];
 
     const data = { checkboxName };
     columns.forEach((col, idx) => {
