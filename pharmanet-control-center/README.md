@@ -29,26 +29,64 @@ Upload Excel → Validate → Summary → Run All → Download ZIP + Logs
 
 ```
 public/             Static frontend (Cloudflare Pages)
-  index.html         Step-by-step UI
-  js/app.js           Client logic: Excel parsing (SheetJS), API calls, downloads
+  index.html         Bulk PDF download automation UI
+  order.html          Sales Order wizard (Normal Order + Generic/Combo)
+  js/app.js           Bulk automation client logic
+  js/order.js          Sales Order wizard client logic
   templates/           Pre-built Download_Documents_Template.xlsx
 functions/api/       Cloudflare Pages Functions (the Worker API)
-  config.js            GET  /api/config        -> { pinRequired }
-  verify-pin.js         POST /api/verify-pin    -> validates X-App-Pin
-  validate.js           POST /api/validate      -> validation summary + per-row status
-  run-all.js            POST /api/run-all       -> login + scrape + download + ZIP
+  config.js            GET  /api/config              -> { pinRequired }
+  verify-pin.js         POST /api/verify-pin          -> validates X-App-Pin
+  validate.js           POST /api/validate            -> validation summary + per-row status
+  run-all.js            POST /api/run-all              -> login + scrape + download + ZIP
+  order/parse-file.js  POST /api/order/parse-file     -> extract order lines from text/sheet
+  order/prepare.js      POST /api/order/prepare        -> login + match party lines to PharmaNET
+  order/submit.js       POST /api/order/submit         -> login + save real Normal/Generic order
 src/                 Framework-free logic shared by the Functions and tests
-  pharmanetClient.js    Cookie-jar based ASP.NET WebForms scraping client
-  aspxForm.js           Hidden-field / GridView HTML parsing helpers
+  pharmanetClient.js    Cookie-jar based ASP.NET WebForms scraping/posting client
+  aspxForm.js           Hidden-field / GridView / <select> / label HTML parsing helpers
   validator.js          Download_Documents sheet validation rules
   grouping.js            Search-grouping + row matching
   fileNaming.js          {DocumentType}_{PartyName}_{DocumentNumber}.pdf + dedupe
   csv.js / zip.js        Process_Log.csv / Failed_Rows.csv / output ZIP
-  runner.js              Orchestrates the whole one-tap pipeline
+  runner.js              Orchestrates the whole one-tap bulk-download pipeline
+  orderFileParser.js     Party order text/Excel -> {rawText, qty} lines
+  productMatcher.js       Fuzzy/learned/embedded-code matching against PharmaNET's material list
+  learnedMappings.js      KV-backed "party product name -> PharmaNET code" memory
+  salesOrderBuilder.js    Normal Order cart-string builder (frmNewOrder.aspx)
+  genericOrderBuilder.js  Generic/Combo Order cart-string builder (frmGenericOrder.aspx)
+  fefoAllocator.js        First-Expire-First-Out batch split for Generic Order lines
 test/                Node test runner unit tests for everything in src/
 ```
 
-## Excel format
+## Sales Order wizard (`/order.html`)
+
+Matches a distributor/party's order file (pasted text, Excel, or text-based
+PDF) against PharmaNET's live material list for a customer, then saves a
+real order — split automatically across PharmaNET's two separate order
+systems:
+
+- **Normal Order** (`frmNewOrder.aspx`, "Sales Order") — standard materials,
+  no rate-entry authority; rate/qty-multiple-factor are fetched live.
+- **Generic Order** (`frmGenericOrder.aspx`, "Combo"/division-specific
+  materials) — split **FEFO** (First-Expire-First-Out) across the
+  material's live batches, each split rounded to a full pack size, with one
+  blended rate per material computed over its combined quantity (matching
+  the page's own "Add" button behaviour exactly).
+
+Review-step features: a NORMAL/GENERIC badge and stock warning per matched
+line, a FEFO batch-split preview for Generic lines, a default "ANUSH COM"
+remark, and a per-line **Pending** toggle (for out-of-stock items) with a
+"Download Pending Items (CSV)" export — pending lines are excluded from the
+actual PharmaNET submission. Confirmed product-name → PharmaNET-code
+mappings are remembered in the `LEARNED_MAPPINGS` KV namespace so repeat
+orders from the same party match automatically next time.
+
+`submit.js` never trusts `prepare.js`'s cached data — it re-logs-in and
+re-fetches rate/qty-multiplier/batches/division/doc-type/tax-class fresh at
+submit time for both order systems.
+
+## Excel format (bulk PDF download tool)
 
 Sheet name: `Download_Documents`. Columns:
 
@@ -65,13 +103,30 @@ Dates must be `DD-MMM-YYYY` (e.g. `01-Jun-2026`).
 ```bash
 npm install
 npm run build:template   # regenerate public/templates/Download_Documents_Template.xlsx
-npm test                  # unit tests for validation/naming/grouping/csv/zip
+npm test                  # unit tests for validation/naming/grouping/csv/zip/order logic
 npm run dev                # wrangler pages dev — http://localhost:8788
 ```
 
 ## Deployment (Cloudflare Pages)
 
+This project lives in the `pharmanet-control-center/` subfolder of the repo,
+not the repo root — set that as the **Root directory** if deploying via the
+Cloudflare dashboard's Git integration.
+
+**Dashboard (Git integration):**
+
+1. Workers & Pages → Create application → Pages → Connect to Git → this repo.
+2. Build settings: Root directory `pharmanet-control-center`, build command
+   *(blank)*, build output directory `public`.
+3. Settings → Functions → KV namespace bindings → create/select a namespace
+   and bind it as `LEARNED_MAPPINGS` (used by the Sales Order wizard).
+4. Settings → Environment variables → optionally set `APP_PIN`.
+
+**CLI:**
+
 ```bash
+npx wrangler login
+npx wrangler kv namespace create LEARNED_MAPPINGS   # paste the id into wrangler.toml
 npm run deploy
 ```
 
@@ -82,8 +137,8 @@ Configure in the Cloudflare Pages dashboard (Settings → Environment variables)
 
 No PharmaNET credentials are ever stored as secrets or env vars — the user
 supplies them in the browser for each run, and they're forwarded once to
-`/api/run-all` over HTTPS and never logged server-side (see `run-all.js`,
-which only logs the error message on failure, never the request body).
+`/api/run-all` (or `/api/order/prepare` and `/api/order/submit`) over HTTPS
+and never logged server-side.
 
 ## Known limitations / what's verified against the live site
 
@@ -128,9 +183,11 @@ against the real, authenticated PharmaNET portal:
 - **`searchInvoices()` itself works** (search/filter/grid-parsing on the
   invoice print page is confirmed correct — only the per-row "View" action is
   broken), so it's reusable once the report-URL mechanism is solved.
-- **Invoice/order generation** (`Invoice_Header` / `Invoice_Items` sheets) is
-  intentionally **not implemented** — the spec explicitly defers this until
-  the live PharmaNET order-creation workflow has been analysed.
+- **Order generation from `Invoice_Header` / `Invoice_Items` sheets** (the
+  bulk-automation tool's original spec) is still not implemented — order
+  creation is instead handled by the separate, live-verified **Sales Order
+  wizard** (`/order.html`, see above), built and tested against real Normal
+  Order and Generic Order saves.
 - **Cloudflare Worker execution limits**: the current design processes an
   entire Run All synchronously in one request. A single transaction search
   with a wide date range can return a 9+ MB HTML response (4,775 rows seen
