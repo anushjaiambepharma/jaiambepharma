@@ -33,10 +33,22 @@ npm install
 ## 5. Start the app
 
 ```
-npm run dev
+npm start
 ```
 
-Leave this terminal window open — the app runs as long as it's running.
+This runs `node server.mjs` — a plain Node server, no Cloudflare/wrangler
+needed. Leave this terminal window open; the app runs as long as it's
+running.
+
+(`npm run dev` still works too — that uses wrangler to emulate Cloudflare
+more closely — but `npm start` is the simpler, faster local option.)
+
+**Optional flags:**
+
+```
+APP_PIN=1234 npm start     # require a PIN to use the app
+PORT=3000 npm start        # serve on a different port
+```
 
 ## 6. Open it in your browser
 
@@ -55,7 +67,10 @@ document-download tool at `/` and the Sales Order wizard at `/order.html`.
 
 - PharmaNET login is entered fresh in the browser each time — never stored.
 - The "learned product mappings" (KV) are simulated locally and persist
-  between restarts in a `.wrangler` folder inside the project.
+  between restarts in a `.local-kv.json` file inside the project (or a
+  `.wrangler` folder if you use `npm run dev` instead).
+- The server only talks to PharmaNET on your behalf — it never sends your
+  data anywhere else.
 - Excel template download, order parsing, FEFO batch splitting, Normal/
   Generic order submission — all identical to the deployed version.
 

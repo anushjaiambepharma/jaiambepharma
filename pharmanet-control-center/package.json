@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build:template": "node scripts/build-template.mjs",
+    "start": "node server.mjs",
     "dev": "wrangler pages dev public",
     "deploy": "wrangler pages deploy public",
     "test": "node --test ./test/*.test.mjs"
