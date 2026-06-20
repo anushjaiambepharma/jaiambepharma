@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sales Order &mdash; PharmaNET Control Center</title>
+<link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <div>
+      <h1>Sales Order</h1>
+      <p>Match a party's order file against PharmaNET and save a Normal Order (no rate-entry authority &mdash; rate is system auto-filled)</p>
+    </div>
+    <nav class="app-nav"><a href="/index.html">&larr; Bulk Automation</a></nav>
+  </header>
+
+  <div class="steps-nav" id="stepsNav"></div>
+
+  <!-- Step 1: App PIN -->
+  <section class="panel" id="panel-pin">
+    <h2>1. App PIN</h2>
+    <p class="helper-text">Enter the App PIN configured by your administrator. This is skipped if no PIN is required.</p>
+    <label for="appPin">App PIN</label>
+    <input type="password" id="appPin" autocomplete="off" />
+    <div class="btn-row">
+      <button class="btn" id="btnCheckPin">Continue</button>
+    </div>
+    <p class="error-text hidden" id="pinError"></p>
+  </section>
+
+  <!-- Step 2: Login + Customer -->
+  <section class="panel hidden" id="panel-login">
+    <h2>2. PharmaNET Login &amp; Customer</h2>
+    <p class="helper-text">Entered once per session. Never stored, never logged.</p>
+    <label for="pnUserId">PharmaNET User ID</label>
+    <input type="text" id="pnUserId" autocomplete="off" />
+    <label for="pnPassword">PharmaNET Password</label>
+    <input type="password" id="pnPassword" autocomplete="off" />
+    <label for="custNo">Customer No (PharmaNET)</label>
+    <input type="text" id="custNo" autocomplete="off" placeholder="e.g. 9007630" />
+    <div class="btn-row">
+      <button class="btn" id="btnLoginContinue">Continue</button>
+    </div>
+    <p class="error-text hidden" id="loginError"></p>
+  </section>
+
+  <!-- Step 3: Order file -->
+  <section class="panel hidden" id="panel-file">
+    <h2>3. Party's Order</h2>
+    <p class="helper-text">Paste the order text, upload an Excel sheet, or upload a text-based PDF. For photos of handwritten/printed orders, type out the lines yourself in the Paste Text tab.</p>
+    <div class="tab-row" id="fileModeTabs">
+      <button class="tab active" data-mode="text">Paste Text</button>
+      <button class="tab" data-mode="sheet">Excel</button>
+      <button class="tab" data-mode="pdf">PDF</button>
+    </div>
+
+    <div id="fileMode-text">
+      <label for="pasteText">One product per line, quantity anywhere in the line (last number on the line is used as qty)</label>
+      <textarea id="pasteText" rows="10" placeholder="ABD-400 1 TAB - 2500&#10;INTADINE SOLUTION 100ML - 100&#10;KUFFDRYL 100ML - 120"></textarea>
+    </div>
+    <div id="fileMode-sheet" class="hidden">
+      <label for="sheetFile">Excel File (.xlsx/.xls)</label>
+      <input type="file" id="sheetFile" accept=".xlsx,.xls" />
+    </div>
+    <div id="fileMode-pdf" class="hidden">
+      <label for="pdfFile">PDF File</label>
+      <input type="file" id="pdfFile" accept=".pdf" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btnParseMatch">Parse &amp; Match Against PharmaNET</button>
+    </div>
+    <p class="error-text hidden" id="fileError"></p>
+    <p class="progress-line hidden" id="parseProgress"></p>
+  </section>
+
+  <!-- Step 4: Review & match -->
+  <section class="panel hidden" id="panel-review">
+    <h2>4. Review &amp; Match</h2>
+    <div class="summary-grid" id="reviewSummaryGrid"></div>
+    <div class="row-table-wrap" id="reviewTableWrap">
+      <table class="row-table" id="reviewTable">
+        <thead>
+          <tr><th>Order Text</th><th>Qty</th><th>Match</th><th></th></tr>
+        </thead>
+        <tbody id="reviewTableBody"></tbody>
+      </table>
+    </div>
+
+    <h3>Order Details</h3>
+    <label for="orderMode">Order Mode</label>
+    <select id="orderMode"></select>
+    <label for="billToAddr">Bill To Address</label>
+    <select id="billToAddr"></select>
+    <label for="shipToAddr">Ship To Address</label>
+    <select id="shipToAddr"></select>
+    <label for="designation">Designation</label>
+    <select id="designation"></select>
+    <div id="empOtherWrap" class="hidden">
+      <label for="empOther">Other (free text)</label>
+      <input type="text" id="empOther" autocomplete="off" />
+    </div>
+    <label for="customerOrderNo">Customer Order No (optional)</label>
+    <input type="text" id="customerOrderNo" autocomplete="off" />
+    <label for="remark">Remark (optional)</label>
+    <input type="text" id="remark" autocomplete="off" />
+
+    <div class="btn-row">
+      <button class="btn" id="btnReviewContinue">Continue to Confirm</button>
+    </div>
+    <p class="error-text hidden" id="reviewError"></p>
+  </section>
+
+  <!-- Step 5: Confirm & submit -->
+  <section class="panel hidden" id="panel-confirm">
+    <h2>5. Confirm &amp; Submit</h2>
+    <p class="helper-text">This is the step that actually saves the order in PharmaNET. Review carefully &mdash; rate is filled automatically by PharmaNET and cannot be edited here.</p>
+    <div class="row-table-wrap">
+      <table class="row-table" id="confirmTable">
+        <thead><tr><th>Material</th><th>Code</th><th>Qty</th></tr></thead>
+        <tbody id="confirmTableBody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btnSubmitOrder">Submit Order to PharmaNET</button>
+      <button class="btn secondary" id="btnBackToReview">Back</button>
+    </div>
+    <p class="progress-line hidden" id="submitProgress"></p>
+    <p class="error-text hidden" id="submitError"></p>
+  </section>
+
+  <!-- Step 6: Result -->
+  <section class="panel hidden" id="panel-result">
+    <h2>6. Result</h2>
+    <div class="summary-grid" id="resultSummaryGrid"></div>
+    <div class="row-table-wrap">
+      <table class="row-table" id="resultTable">
+        <thead><tr><th>Material</th><th>Code</th><th>Qty</th><th>Rate</th><th>Value</th></tr></thead>
+        <tbody id="resultTableBody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary" id="btnNewOrder">Start New Order</button>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="/js/order.js"></script>
+</body>
+</html>

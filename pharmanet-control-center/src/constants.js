@@ -88,3 +88,23 @@ export const STATUS = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   NOT_IMPLEMENTED: 'NOT_IMPLEMENTED',
 };
+
+// Normal Order ("Sales Order", no rate-entry authority) form metadata for
+// frmNormalRateOrder.aspx. "Designation" is a static dropdown on that page
+// (never server-fetched) used to look up which employee number the order is
+// recorded under; 999 ("Others") skips the employee lookup entirely and
+// records a free-text note instead.
+export const ORDER_DESIGNATIONS = [
+  { value: '1', label: 'Sales Head' },
+  { value: '2', label: 'SM' },
+  { value: '3', label: 'RBM' },
+  { value: '4', label: 'ABM/SR ABM' },
+  { value: '5', label: 'FVO(BE)' },
+  { value: '6', label: 'FRO(RO)' },
+  { value: '999', label: 'Others' },
+];
+
+export const ORDER_DESIGNATION_OTHER = '999';
+
+// The template dropdown only ever offers one real choice server-side.
+export const NORMAL_ORDER_TEMPLATE_VALUE = '3';

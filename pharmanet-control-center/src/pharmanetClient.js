@@ -1,5 +1,6 @@
 import { CookieJar } from './cookieJar.js';
 import { extractAllHiddenFields, parseGridRows, extractViewReportUrl } from './aspxForm.js';
+import { buildNormalOrderPayload } from './salesOrderBuilder.js';
 import {
   BASE_URL,
   TRANSACTIONS_PATH,
@@ -11,6 +12,9 @@ import {
   BROWSER_TYPE_HEADER_VALUE,
   STATUS,
 } from './constants.js';
+
+const NORMAL_ORDER_PATH = 'frmNormalRateOrder.aspx';
+const WEBMETHOD_PATH = 'Webmethod.aspx';
 
 export class PharmaNetError extends Error {
   constructor(status, message) {
@@ -210,5 +214,112 @@ export class PharmaNetClient {
       throw new PharmaNetError(STATUS.FAILED_PDF_ERROR, `Expected a PDF but got "${contentType}".`);
     }
     return resp.arrayBuffer();
+  }
+
+  /**
+   * Call one of PharmaNET's ASP.NET PageMethods (Webmethod.aspx/<method>).
+   * The page wraps the real payload in `{ d: "<json-or-plain-string>" }` —
+   * callers decide whether `.d` itself needs a second JSON.parse, since some
+   * methods (e.g. getpharmadate) return a plain string instead of a Table.
+   */
+  async callWebMethod(method, payload) {
+    const resp = await this.request(`${BASE_URL}${WEBMETHOD_PATH}/${method}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    const { d } = await resp.json();
+    if (d === 'Expire') {
+      throw new PharmaNetError(STATUS.FAILED_LOGIN_ERROR, 'PharmaNET session expired.');
+    }
+    return d;
+  }
+
+  /**
+   * Visit the Normal Order page once per session before calling its
+   * Webmethods — live testing showed the server expects this navigation
+   * (it primes session state the page methods rely on).
+   */
+  async openNormalOrderPage() {
+    await this.request(`${BASE_URL}${NORMAL_ORDER_PATH}`, { method: 'GET' });
+  }
+
+  async getCustomersForNormalOrder(plant = DEFAULT_PLANT) {
+    const d = await this.callWebMethod('getcustomerfornormalorder', { plantid: plant });
+    if (d == null || d === '1') return [];
+    return JSON.parse(d).Table;
+  }
+
+  async getPharmaDate(plant = DEFAULT_PLANT) {
+    return this.callWebMethod('getpharmadate', { plantid: plant });
+  }
+
+  async getMaterialsForCustomer(custNo, plant = DEFAULT_PLANT) {
+    const d = await this.callWebMethod('getmaterial', { ncustsupno: custNo, nplantno: plant });
+    if (d == null || d === '0') return [];
+    return JSON.parse(d).Table;
+  }
+
+  async getMaterialRate(materialNo, qty, plant = DEFAULT_PLANT) {
+    const d = await this.callWebMethod('GetMaterialRate', { nPlantNo: plant, nMaterialNo: materialNo, iQty: qty });
+    const table = JSON.parse(d).Table;
+    return table[0] ? Number(table[0].mMaterialRate) : null;
+  }
+
+  async getOrderModes() {
+    const d = await this.callWebMethod('fillordermode', {});
+    if (d == null || d === '0') return [];
+    return JSON.parse(d).Table;
+  }
+
+  async getBillShipAddresses(custNo) {
+    const d = await this.callWebMethod('FillBillToShipTo', { PlantCustSuppNo: custNo });
+    if (d == null || d === '0') return { billTo: [], shipTo: [] };
+    const table = JSON.parse(d).Table;
+    return {
+      billTo: table.filter((a) => a.cAddressType === 'B'),
+      shipTo: table.filter((a) => a.cAddressType !== 'B'),
+    };
+  }
+
+  async getCashDiscount(custNo, plant = DEFAULT_PLANT) {
+    const d = await this.callWebMethod('GetCashDiscount', { plantid: plant, custid: custNo });
+    const table = JSON.parse(d).Table;
+    return table[0] ? table[0].fCashDiscount : '0.00';
+  }
+
+  /** Resolves a quantity against the customer/material's qty-multiple rule (e.g. round to nearest 100). */
+  async getQtyMultiFactor({ plant = DEFAULT_PLANT, custNo, divisionNo, materialNo, orderDate, qty }) {
+    const d = await this.callWebMethod('getRateOrderQtymultifactor', {
+      nPlantNo: plant,
+      nCustSupNo: custNo,
+      nDivisionNo: divisionNo,
+      nMaterialNo: materialNo,
+      dOrderDate: orderDate,
+      nQty: qty,
+    });
+    if (d == null || d === '0') return null;
+    return JSON.parse(d).Table[0];
+  }
+
+  async getEmployeeForDesignation({ plant = DEFAULT_PLANT, custNo, designationNo }) {
+    const d = await this.callWebMethod('GetEmployeeByCustomerAndDesignation', {
+      nPlantNo: plant,
+      PlantCustSuppNo: custNo,
+      DesignationNo: designationNo,
+    });
+    if (d == null || d === '0') return null;
+    return JSON.parse(d).Table[0];
+  }
+
+  /**
+   * Create a real Normal Order ("Sales Order") on PharmaNET. `order.lines`
+   * carry product + qty only — there is no rate field here by design; rate
+   * must already be the value PharmaNET's own GetMaterialRate returned.
+   */
+  async createSalesOrder(order) {
+    const strarray = buildNormalOrderPayload(order);
+    const d = await this.callWebMethod('OrderInsertDataForNormalRateOrder', { strarray });
+    return d;
   }
 }

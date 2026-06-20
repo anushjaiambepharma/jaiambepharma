@@ -34,6 +34,14 @@ header.app-header {
   margin-bottom: 24px;
 }
 
+.app-nav a {
+  color: var(--accent-hover);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.app-nav a:hover { text-decoration: underline; }
+
 header.app-header h1 {
   font-size: 1.3rem;
   margin: 0;
@@ -177,3 +185,76 @@ table.row-table th { background: #0c0e13; position: sticky; top: 0; }
 .error-text { color: var(--danger); font-size: 0.85rem; margin-top: 10px; }
 
 .progress-line { font-size: 0.85rem; color: var(--text-dim); margin-top: 10px; }
+
+textarea, select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: #0c0e13;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.tab-row { display: flex; gap: 8px; margin: 12px 0; }
+.tab {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.tab.active { border-color: var(--accent); color: var(--text); background: rgba(47, 143, 107, 0.15); }
+
+.match-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.match-badge.confirmed { background: rgba(47,143,107,0.2); color: var(--accent-hover); }
+.match-badge.review { background: rgba(212,167,44,0.18); color: var(--warn); }
+
+.match-cell { min-width: 220px; }
+.match-cell .product-name { font-size: 0.82rem; }
+.match-cell .product-code { font-size: 0.72rem; color: var(--text-dim); }
+
+.candidate-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; max-height: 140px; overflow: auto; }
+.candidate-btn {
+  text-align: left;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: #0c0e13;
+  color: var(--text);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+.candidate-btn:hover { border-color: var(--accent); }
+
+.product-search {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: #0c0e13;
+  color: var(--text);
+  font-size: 0.78rem;
+  margin-top: 6px;
+}
+
+input[type="number"] {
+  width: 90px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background: #0c0e13;
+  color: var(--text);
+  font-size: 0.85rem;
+}

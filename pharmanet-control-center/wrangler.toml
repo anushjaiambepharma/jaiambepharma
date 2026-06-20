@@ -6,3 +6,12 @@ pages_build_output_dir = "public"
 # via `wrangler pages secret put`. Never commit real values here.
 #
 # APP_PIN - optional shared PIN required to use the app (leave unset to disable).
+
+# Stores learned "party's product name -> PharmaNET material code" mappings
+# for the Sales Order feature (functions/api/order/*). Create it once with:
+#   wrangler kv namespace create LEARNED_MAPPINGS
+# then paste the returned id below (and into the Cloudflare Pages dashboard
+# under Settings > Functions > KV namespace bindings for the deployed site).
+[[kv_namespaces]]
+binding = "LEARNED_MAPPINGS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
