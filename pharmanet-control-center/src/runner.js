@@ -4,7 +4,7 @@ import { buildFileName, folderFor } from './fileNaming.js';
 import { isTransactionDocType } from './validator.js';
 import { toCsv, PROCESS_LOG_COLUMNS } from './csv.js';
 import { buildOutputZip } from './zip.js';
-import { STATUS, INVOICE_DOC_TYPE } from './constants.js';
+import { STATUS } from './constants.js';
 
 function logEntry(row, status, pdfFileName, errorMessage) {
   return {
@@ -53,20 +53,6 @@ export async function runAll({ userId, password, validatedRows, sourceExcelBytes
   const groups = groupReadyRows(validatedRows);
 
   for (const group of groups) {
-    // Live testing against the real PharmaNET site showed the per-row "View"
-    // action on the customer invoice print page (FrmCustomerInvoicePrint.aspx)
-    // doesn't carry the row's customer/document identifiers through the
-    // postback — it returns 200 + a structurally valid but blank PDF instead
-    // of an error. Until that's reverse-engineered against real data, refuse
-    // to download plain INVOICE rows rather than risk shipping a blank file
-    // under the right name.
-    if (group.docType === INVOICE_DOC_TYPE) {
-      for (const row of group.rows) {
-        log.push(logEntry(row, STATUS.NOT_IMPLEMENTED, '', 'INVOICE bulk download is not yet verified against the live PharmaNET customer invoice print page; download it manually for now.'));
-      }
-      continue;
-    }
-
     let searchResult;
     try {
       searchResult = isTransactionDocType(group.docType)

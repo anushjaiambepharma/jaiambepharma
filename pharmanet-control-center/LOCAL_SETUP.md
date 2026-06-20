@@ -74,9 +74,8 @@ document-download tool at `/` and the Sales Order wizard at `/order.html`.
 - Excel template download, order parsing, FEFO batch splitting, Normal/
   Generic order submission — all identical to the deployed version.
 
-## Known gap (as of this writing)
+## Document downloads
 
-Plain **invoice** bulk download is not implemented yet — Credit Note, Debit
-Note, Rate Credit, and Rate Debit downloads work; invoices need a HAR
-capture from a real PharmaNET session to fix (see project README for
-details).
+Invoice, Credit Note, Credit Note (Tax), Debit Note, Debit Note (Tax), Rate
+Credit, and Rate Debit bulk downloads are all working and verified against
+the live PharmaNET site.
