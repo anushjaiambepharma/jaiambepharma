@@ -98,20 +98,43 @@ Division InvoiceType DownloadRequired Remarks
 `DocumentType` ∈ `INVOICE, CREDIT_NOTE, CREDIT_NOTE_TAX, DEBIT_NOTE, DEBIT_NOTE_TAX, RATE_CREDIT, RATE_DEBIT`.
 Dates must be `DD-MMM-YYYY` (e.g. `01-Jun-2026`).
 
-## Local development
+## Running the app (recommended: locally)
+
+Run the whole app on your own computer with plain Node.js — no Cloudflare
+account, no wrangler, no deployment. See `LOCAL_SETUP.md` for the
+step-by-step version.
 
 ```bash
-npm install
-npm run build:template   # regenerate public/templates/Download_Documents_Template.xlsx
-npm test                  # unit tests for validation/naming/grouping/csv/zip/order logic
-npm run dev                # wrangler pages dev — http://localhost:8788
+npm install                # one time
+npm start                  # node server.mjs — http://localhost:8788
 ```
 
-## Deployment (Cloudflare Pages)
+`npm start` runs `server.mjs`, which serves the frontend and reuses the exact
+same `functions/api/*` handlers and `src/*` logic as the Cloudflare version,
+with a file-backed shim (`.local-kv.json`) for the `LEARNED_MAPPINGS` KV
+store. Optional flags: `APP_PIN=1234 npm start`, `PORT=3000 npm start`.
 
-This project lives in the `pharmanet-control-center/` subfolder of the repo,
-not the repo root — set that as the **Root directory** if deploying via the
-Cloudflare dashboard's Git integration.
+> **Use local for bulk PDF download.** A whole "Run All" is processed in one
+> request and builds the output ZIP in memory. On Cloudflare that can exceed
+> the Worker CPU-time / ~128 MB memory limits for large batches or wide date
+> ranges (a single transaction search can return 9+ MB of HTML / thousands of
+> rows). Your own PC has no such caps, so run bulk downloads locally.
+
+Other useful scripts:
+
+```bash
+npm run build:template   # regenerate public/templates/Download_Documents_Template.xlsx
+npm test                  # unit tests for validation/naming/grouping/csv/zip/order logic
+npm run dev                # wrangler pages dev (emulates Cloudflare more closely)
+```
+
+## Deployment (Cloudflare Pages) — optional
+
+The app can still be deployed to Cloudflare Pages (the Sales Order wizard
+works well there), but **bulk PDF download should be run locally** for the
+reasons above. This project lives in the `pharmanet-control-center/`
+subfolder of the repo, not the repo root — set that as the **Root directory**
+if deploying via the Cloudflare dashboard's Git integration.
 
 **Dashboard (Git integration):**
 
