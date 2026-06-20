@@ -136,8 +136,22 @@ async function handleApi(req, res, pathname) {
   const outHeaders = {};
   for (const [name, value] of response.headers.entries()) outHeaders[name] = value;
   res.writeHead(response.status, outHeaders);
-  const buf = Buffer.from(await response.arrayBuffer());
-  res.end(buf);
+
+  // Stream the body through as it arrives instead of buffering the whole
+  // thing first — a bulk Run All response is built incrementally (NDJSON
+  // progress lines) over several minutes, and buffering it here would send
+  // zero bytes to the browser until the very end, defeating the point.
+  if (!response.body) {
+    res.end();
+    return;
+  }
+  const reader = response.body.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    res.write(value);
+  }
+  res.end();
 }
 
 async function handleStatic(req, res, pathname) {
