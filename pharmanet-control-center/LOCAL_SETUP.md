@@ -4,6 +4,14 @@ These steps run the app entirely on your Windows PC — no Cloudflare account,
 no deployment, no internet access needed except to reach the real PharmaNET
 site itself (same as using a browser).
 
+## Quick start (Windows): just double-click `start.bat`
+
+Once Node.js is installed (step 1 below) and you have the project folder on
+your PC, you can simply **double-click `start.bat`**. It installs
+dependencies the first time, starts the local server, and opens the app in
+your browser automatically. Keep that window open while you use the app;
+close it to stop. (The manual steps below do the same thing by hand.)
+
 ## 1. Install Node.js
 
 Download and install the **LTS** version from https://nodejs.org if you
