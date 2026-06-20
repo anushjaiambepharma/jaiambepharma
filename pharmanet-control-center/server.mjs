@@ -191,6 +191,28 @@ const server = createServer(async (req, res) => {
   }
 });
 
+// A bulk "Run All" processes every row sequentially against the live
+// PharmaNET site in one HTTP request/response — for a few hundred rows that
+// can run for several minutes. Node's defaults are already fine for this
+// (server.timeout/headersTimeout/requestTimeout only bound how long it takes
+// to *receive* a request, not how long the handler takes to respond), but
+// set them explicitly so a future Node version's defaults can't silently cap
+// a long-running batch.
+server.timeout = 0;
+server.headersTimeout = 0;
+server.requestTimeout = 0;
+server.keepAliveTimeout = 0;
+
+// One unexpected error from a flaky external site shouldn't take down the
+// whole local server (and whatever else it's mid-processing) — log it and
+// keep running instead of crashing the process.
+process.on('uncaughtException', (err) => {
+  console.error('[uncaught exception] (server kept running)\n', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[unhandled rejection] (server kept running)\n', err);
+});
+
 server.listen(PORT, () => {
   console.log('');
   console.log('  PharmaNET Control Center is running locally.');
