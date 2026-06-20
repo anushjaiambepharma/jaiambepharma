@@ -21,8 +21,17 @@ const DOSAGE_FORM_SYNONYMS = {
   ointment: 'oint',
 };
 
+/** Matches an embedded product code suffix like "...UPC0000005" so an exact code beats fuzzy text matching. */
+const EMBEDDED_CODE_PATTERN = /\b[a-z]{2,6}\d{4,}\b/i;
+
+export function extractEmbeddedCode(raw) {
+  const match = String(raw || '').match(EMBEDDED_CODE_PATTERN);
+  return match ? match[0].toUpperCase() : null;
+}
+
 export function normalizeProductName(raw) {
   let text = String(raw || '').toLowerCase().trim();
+  text = text.replace(EMBEDDED_CODE_PATTERN, ' ');
   text = text.replace(/[^a-z0-9.\s]/g, ' ');
   text = text.replace(/(\d+(?:\.\d+)?)\s*(ml|mg|gm|gms|kg|l)\b/g, '$1$2');
   text = text.replace(/\s+/g, ' ').trim();
@@ -73,14 +82,20 @@ const MAX_SUGGESTIONS = 5;
 export function matchProduct(rawText, productMaster, learnedMappings = {}) {
   const normalizedKey = normalizeProductName(rawText);
 
+  const embeddedCode = extractEmbeddedCode(rawText);
+  if (embeddedCode) {
+    const product = productMaster.find((p) => p.code.toUpperCase() === embeddedCode);
+    if (product) return { status: 'AUTO_CONFIRMED', matchedBy: 'CODE', normalizedKey, product };
+  }
+
   const learnedCode = learnedMappings[normalizedKey];
   if (learnedCode) {
     const product = productMaster.find((p) => p.code === learnedCode);
-    if (product) return { status: 'AUTO_CONFIRMED', normalizedKey, product };
+    if (product) return { status: 'AUTO_CONFIRMED', matchedBy: 'LEARNED', normalizedKey, product };
   }
 
   const exact = productMaster.find((p) => normalizeProductName(p.name) === normalizedKey);
-  if (exact) return { status: 'AUTO_CONFIRMED', normalizedKey, product: exact };
+  if (exact) return { status: 'AUTO_CONFIRMED', matchedBy: 'EXACT_TEXT', normalizedKey, product: exact };
 
   const candidates = productMaster
     .map((p) => ({ ...p, score: textSimilarity(normalizedKey, normalizeProductName(p.name)) }))

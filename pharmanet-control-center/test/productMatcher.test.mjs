@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeProductName, matchProduct, matchOrderLines } from '../src/productMatcher.js';
+import { normalizeProductName, matchProduct, matchOrderLines, extractEmbeddedCode } from '../src/productMatcher.js';
 
 test('normalizeProductName collapses sus/syp and ml spacing variants to the same key', () => {
   const variants = ['abd sus 10 ml', 'abd syp 10 ml', 'abd sus 10ml', 'abd syp 10ml', 'ABD SYP 10 ML'];
@@ -40,6 +40,25 @@ test('matchProduct returns no candidates when nothing is close enough', () => {
   const result = matchProduct('abd sus 10ml', master);
   assert.equal(result.status, 'NEEDS_REVIEW');
   assert.deepEqual(result.candidates, []);
+});
+
+// Shaped after a real party order line: "ABD-400 1 TAB (ALU-ALU) UPC0000005".
+test('extractEmbeddedCode pulls a trailing product code out of the line text', () => {
+  assert.equal(extractEmbeddedCode('ABD-400 1 TAB (ALU-ALU) UPC0000005'), 'UPC0000005');
+  assert.equal(extractEmbeddedCode('KUFFDRYL 100ML UPC0000266'), 'UPC0000266');
+  assert.equal(extractEmbeddedCode('no code here'), null);
+});
+
+test('matchProduct prefers an embedded product code over fuzzy text matching', () => {
+  const master = [
+    { code: 'UPC0000005', name: 'ABD-400 1 TAB (ALU-ALU)' },
+    { code: 'UPC0000179', name: 'INTADINE SOLUTION 100ML' },
+    { code: 'UPC0000266', name: 'KUFFDRYL 100ML' },
+  ];
+  const result = matchProduct('KUFFDRYL 100ML UPC0000266', master);
+  assert.equal(result.status, 'AUTO_CONFIRMED');
+  assert.equal(result.matchedBy, 'CODE');
+  assert.equal(result.product.code, 'UPC0000266');
 });
 
 test('matchOrderLines applies matching across a list of parsed lines', () => {
