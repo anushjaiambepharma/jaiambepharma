@@ -83,7 +83,7 @@
     <div class="row-table-wrap" id="reviewTableWrap">
       <table class="row-table" id="reviewTable">
         <thead>
-          <tr><th>Order Text</th><th>Qty</th><th>Match</th><th></th></tr>
+          <tr><th>Order Text</th><th>Qty</th><th>Match</th><th></th><th>Pending</th></tr>
         </thead>
         <tbody id="reviewTableBody"></tbody>
       </table>
@@ -105,10 +105,11 @@
     <label for="customerOrderNo">Customer Order No (optional)</label>
     <input type="text" id="customerOrderNo" autocomplete="off" />
     <label for="remark">Remark (optional)</label>
-    <input type="text" id="remark" autocomplete="off" />
+    <input type="text" id="remark" autocomplete="off" value="ANUSH COM" />
 
     <div class="btn-row">
       <button class="btn" id="btnReviewContinue">Continue to Confirm</button>
+      <button class="btn secondary" id="btnDownloadPending">Download Pending Items (CSV)</button>
     </div>
     <p class="error-text hidden" id="reviewError"></p>
   </section>
@@ -117,6 +118,7 @@
   <section class="panel hidden" id="panel-confirm">
     <h2>5. Confirm &amp; Submit</h2>
     <p class="helper-text">This is the step that actually saves the order in PharmaNET. Review carefully &mdash; rate is filled automatically by PharmaNET and cannot be edited here.</p>
+    <p class="helper-text hidden" id="confirmPendingNote"></p>
     <div class="row-table-wrap">
       <table class="row-table" id="confirmTable">
         <thead><tr><th>Material</th><th>Code</th><th>Qty</th></tr></thead>

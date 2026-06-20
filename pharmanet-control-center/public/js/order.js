@@ -49,6 +49,75 @@
     return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // ---- FEFO preview (mirrors src/fefoAllocator.js; submit.js recomputes the real split) ----
+  function parseExpiryClient(monYear) {
+    const parsed = new Date(`01-${monYear}`);
+    return Number.isNaN(parsed.getTime()) ? Infinity : parsed.getTime();
+  }
+
+  function previewFefoAllocation(batches, requestedQty, packSize) {
+    const sorted = [...(batches || [])]
+      .filter((b) => b.stockQty > 0)
+      .sort((a, b) => parseExpiryClient(a.expiry) - parseExpiryClient(b.expiry));
+    const allocations = [];
+    let remaining = requestedQty;
+    for (const batch of sorted) {
+      if (remaining <= 0) break;
+      let take = Math.min(remaining, batch.stockQty);
+      if (packSize > 0) take = Math.floor(take / packSize) * packSize;
+      if (take <= 0) continue;
+      allocations.push({ batch: batch.batch, qty: take, expiry: batch.expiry });
+      remaining -= take;
+    }
+    return { allocations, shortfall: Math.max(remaining, 0) };
+  }
+
+  // ---- Pending-items CSV ----
+  function escapeCsvField(value) {
+    const s = String(value ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  function buildPendingCsv(pendingLines) {
+    const header = ['Order Text', 'Product Name', 'Product Code', 'Qty', 'System'];
+    const rows = pendingLines.map((l) =>
+      [
+        l.line.rawText,
+        l.resolvedProduct.materialNameFull || l.resolvedProduct.name,
+        l.resolvedProduct.code,
+        l.qty,
+        l.resolvedProduct.system,
+      ]
+        .map(escapeCsvField)
+        .join(',')
+    );
+    return [header.map(escapeCsvField).join(','), ...rows].join('\n');
+  }
+
+  function downloadCsv(filename, content) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  el('btnDownloadPending').addEventListener('click', () => {
+    const errorEl = el('reviewError');
+    errorEl.classList.add('hidden');
+    const pendingLines = state.reviewLines.filter((l) => l.pending && l.resolvedProduct);
+    if (pendingLines.length === 0) {
+      errorEl.textContent = 'No lines are marked Pending yet. Check the "Pending" box on out-of-stock lines first.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+    downloadCsv(`pending-order-${state.custNo}-${Date.now()}.csv`, buildPendingCsv(pendingLines));
+  });
+
   // ---- Step 1: PIN ----
   async function init() {
     try {
@@ -168,6 +237,7 @@
         qty: m.line.qty != null ? m.line.qty : 1,
         resolvedProduct: m.status === 'AUTO_CONFIRMED' ? m.product : null,
         searchOpen: false,
+        pending: false,
       }));
 
       populateOrderDetailSelects(prepareResult);
@@ -222,6 +292,12 @@
           renderReview();
         });
       }
+      const pendingBox = el(`pending-${i}`);
+      if (pendingBox) {
+        pendingBox.addEventListener('change', (e) => {
+          state.reviewLines[i].pending = e.target.checked;
+        });
+      }
     });
   }
 
@@ -251,14 +327,35 @@
   }
 
   function renderReviewRow(line, i) {
-    const matchCell = line.resolvedProduct
-      ? `<div class="match-cell">
+    let matchCell;
+    if (line.resolvedProduct) {
+      const product = line.resolvedProduct;
+      const systemBadge = `<span class="match-badge ${product.system === 'GENERIC' ? 'generic' : 'normal'}">${product.system === 'GENERIC' ? 'GENERIC' : 'NORMAL'}</span>`;
+
+      const availableQty = Number(product.availableQty);
+      const stockWarning =
+        Number.isFinite(availableQty) && availableQty < line.qty
+          ? `<div class="stock-warning">Only ${availableQty} available (need ${line.qty}). Consider marking Pending.</div>`
+          : '';
+
+      let fefoPreview = '';
+      if (product.system === 'GENERIC' && Array.isArray(product.batches)) {
+        const { allocations, shortfall } = previewFefoAllocation(product.batches, line.qty, product.packSize);
+        const allocText = allocations.map((a) => `${a.qty} from ${escapeHtml(a.batch)} (Exp ${escapeHtml(a.expiry)})`).join(', ') || 'none';
+        fefoPreview = `<div class="fefo-preview">FEFO split: ${allocText}${shortfall > 0 ? ` <span class="stock-warning">short by ${shortfall}</span>` : ''}</div>`;
+      }
+
+      matchCell = `<div class="match-cell">
           <span class="match-badge confirmed">${escapeHtml(line.matchedBy || 'MATCHED')}</span>
-          <div class="product-name">${escapeHtml(line.resolvedProduct.materialNameFull || line.resolvedProduct.name)}</div>
-          <div class="product-code">${escapeHtml(line.resolvedProduct.code)}</div>
+          ${systemBadge}
+          <div class="product-name">${escapeHtml(product.materialNameFull || product.name)}</div>
+          <div class="product-code">${escapeHtml(product.code)}</div>
+          ${stockWarning}
+          ${fefoPreview}
           <button type="button" class="candidate-btn" id="change-${i}">Change</button>
-        </div>`
-      : `<div class="match-cell">
+        </div>`;
+    } else {
+      matchCell = `<div class="match-cell">
           <span class="match-badge review">NEEDS REVIEW</span>
           <div class="candidate-list">
             ${(line.candidates || []).map((c, ci) => `<button type="button" class="candidate-btn" id="cand-${i}-${ci}">${escapeHtml(c.name)} <span class="product-code">(${escapeHtml(c.code)}, ${Math.round(c.score * 100)}%)</span></button>`).join('')}
@@ -266,11 +363,13 @@
           <input type="text" class="product-search" id="search-${i}" placeholder="Search full product master..." />
           <div id="searchResults-${i}" class="candidate-list"></div>
         </div>`;
+    }
 
     return `<tr>
       <td>${escapeHtml(line.line.rawText)}</td>
       <td><input type="number" id="qty-${i}" value="${line.qty}" min="1" /></td>
       <td colspan="2">${matchCell}</td>
+      <td><input type="checkbox" id="pending-${i}" ${line.pending ? 'checked' : ''} /></td>
     </tr>`;
   }
 
@@ -318,7 +417,10 @@
 
   // ---- Step 5: Confirm & submit ----
   function renderConfirm() {
-    el('confirmTableBody').innerHTML = state.reviewLines
+    const submittable = state.reviewLines.filter((l) => !l.pending);
+    const pendingCount = state.reviewLines.length - submittable.length;
+
+    el('confirmTableBody').innerHTML = submittable
       .map(
         (l) => `<tr>
           <td>${escapeHtml(l.resolvedProduct.materialNameFull || l.resolvedProduct.name)}</td>
@@ -327,11 +429,25 @@
         </tr>`
       )
       .join('');
+
+    const noteEl = el('confirmPendingNote');
+    if (pendingCount > 0) {
+      noteEl.textContent = `${pendingCount} line(s) are marked Pending and will NOT be submitted. Download the Pending Items CSV from the Review step if you haven't already.`;
+      noteEl.classList.remove('hidden');
+    } else {
+      noteEl.classList.add('hidden');
+    }
   }
 
   el('btnBackToReview').addEventListener('click', () => setStep(3));
 
   el('btnSubmitOrder').addEventListener('click', async () => {
+    const submittable = state.reviewLines.filter((l) => !l.pending);
+    if (submittable.length === 0) {
+      el('submitError').textContent = 'Every line is marked Pending — nothing to submit.';
+      el('submitError').classList.remove('hidden');
+      return;
+    }
     if (!window.confirm('This will save a real Sales Order in PharmaNET. Continue?')) return;
 
     const btn = el('btnSubmitOrder');
@@ -358,7 +474,7 @@
           empOther: state.orderDetails.empOther,
           remark: state.orderDetails.remark,
           customerOrderNo: state.orderDetails.customerOrderNo,
-          lines: state.reviewLines.map((l) => ({
+          lines: submittable.map((l) => ({
             qty: l.qty,
             product: l.resolvedProduct,
             normalizedKey: l.normalizedKey,

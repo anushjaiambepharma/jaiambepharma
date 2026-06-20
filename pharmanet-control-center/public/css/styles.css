@@ -220,10 +220,16 @@ textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset:
 }
 .match-badge.confirmed { background: rgba(47,143,107,0.2); color: var(--accent-hover); }
 .match-badge.review { background: rgba(212,167,44,0.18); color: var(--warn); }
+.match-badge.normal { background: rgba(90,120,217,0.18); color: #8fa6f3; }
+.match-badge.generic { background: rgba(165,99,217,0.18); color: #c79bf0; }
 
 .match-cell { min-width: 220px; }
 .match-cell .product-name { font-size: 0.82rem; }
 .match-cell .product-code { font-size: 0.72rem; color: var(--text-dim); }
+
+.stock-warning { font-size: 0.72rem; color: var(--warn); margin-top: 4px; }
+.fefo-preview { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+.fefo-preview .stock-warning { display: inline; margin-top: 0; }
 
 .candidate-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; max-height: 140px; overflow: auto; }
 .candidate-btn {

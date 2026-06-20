@@ -17,6 +17,38 @@ export function extractAllHiddenFields(html) {
   return fields;
 }
 
+/**
+ * Extract every <option> from a named <select> as {value, text} pairs.
+ * Needed for pages like frmGenericOrder.aspx where dropdowns are populated
+ * via full postbacks rather than JSON webmethods, so there's no API
+ * response to parse directly.
+ */
+export function extractSelectOptions(html, selectName) {
+  const escaped = selectName.replace(/[$]/g, '\\$');
+  const selectRegex = new RegExp(`<select\\b[^>]*name=["']${escaped}["'][^>]*>([\\s\\S]*?)<\\/select>`, 'i');
+  const selectMatch = html.match(selectRegex);
+  if (!selectMatch) return [];
+
+  const optionRegex = /<option\b([^>]*)>([\s\S]*?)<\/option>/gi;
+  const options = [];
+  let match;
+  while ((match = optionRegex.exec(selectMatch[1]))) {
+    const valueMatch = match[1].match(/\bvalue=["']([^"']*)["']/i);
+    options.push({
+      value: valueMatch ? decodeHtmlEntities(valueMatch[1]) : '',
+      text: stripTags(match[2]),
+    });
+  }
+  return options;
+}
+
+/** Extract a master-page status/error <span>'s text content (e.g. ctl00_lblError). */
+export function extractLabelText(html, labelId) {
+  const regex = new RegExp(`<span\\b[^>]*id=["']${labelId}["'][^>]*>([\\s\\S]*?)<\\/span>`, 'i');
+  const match = html.match(regex);
+  return match ? stripTags(match[1]) : '';
+}
+
 export function decodeHtmlEntities(str) {
   return String(str)
     .replace(/&amp;/g, '&')

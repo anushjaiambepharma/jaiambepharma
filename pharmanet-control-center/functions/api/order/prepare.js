@@ -36,7 +36,7 @@ export async function onRequestPost({ request, env }) {
     if (!customer) return json({ error: `Customer ${custNo} was not found for plant ${plant}.` }, 404);
 
     const materials = await client.getMaterialsForCustomer(custNo, plant);
-    const productMaster = materials.map((m) => ({
+    const normalProducts = materials.map((m) => ({
       code: String(m.nMaterialNo),
       name: m.vMaterialNameExcel,
       divisionNo: m.ndivisionno,
@@ -46,10 +46,42 @@ export async function onRequestPost({ request, env }) {
       qtyMultiFactor: Number(m.iQtyMultiFactor) || 1,
       availableQty: Number(m.AvailableQty) || 0,
       materialNameFull: m.MaterialName,
+      system: 'NORMAL',
     }));
 
+    // Generic Order ("Combo"/division-specific materials) is a separate
+    // catalog from Normal Order's — frmGenericOrder.aspx has no JSON
+    // webmethod for it, so its material list only exists as the dropdown
+    // options returned by the customer-select postback.
+    const genericState = await client.selectGenericCustomer({ hiddenFields: await client.openGenericOrderPage(), plant, custNo });
+    const genericProducts = genericState.materials.map((m) => ({
+      code: m.code,
+      name: m.name,
+      sapCode: m.sapCode,
+      matFlag: m.matFlag,
+      availableQty: m.availableQty,
+      system: 'GENERIC',
+    }));
+
+    const productMaster = [...normalProducts, ...genericProducts];
     const learned = await loadLearnedMappings(env.LEARNED_MAPPINGS);
     const matched = matchOrderLines(lines, productMaster, learned);
+
+    // For lines auto-confirmed against a Generic Order material, resolve its
+    // batch list now so the review UI can show a FEFO (earliest-expiry-first)
+    // preview before the operator confirms. Final batch split is recomputed
+    // fresh at submit time against whatever qty/state holds then.
+    for (const m of matched) {
+      if (m.status !== 'AUTO_CONFIRMED' || m.product.system !== 'GENERIC') continue;
+      const materialState = await client.selectGenericMaterial({
+        hiddenFields: genericState.hiddenFields,
+        plant,
+        custNo,
+        materialNo: m.product.code,
+      });
+      m.product.batches = materialState.batches;
+      m.product.packSize = materialState.packSize;
+    }
 
     const [pharmaDate, orderModes, addresses, cashDiscount] = await Promise.all([
       client.getPharmaDate(plant),

@@ -1,6 +1,7 @@
 import { CookieJar } from './cookieJar.js';
-import { extractAllHiddenFields, parseGridRows, extractViewReportUrl } from './aspxForm.js';
+import { extractAllHiddenFields, extractSelectOptions, extractLabelText, parseGridRows, extractViewReportUrl } from './aspxForm.js';
 import { buildNormalOrderPayload } from './salesOrderBuilder.js';
+import { buildGenericOrderPayload } from './genericOrderBuilder.js';
 import {
   BASE_URL,
   TRANSACTIONS_PATH,
@@ -14,7 +15,38 @@ import {
 } from './constants.js';
 
 const NORMAL_ORDER_PATH = 'frmNormalRateOrder.aspx';
+const GENERIC_ORDER_PATH = 'frmGenericOrder.aspx';
 const WEBMETHOD_PATH = 'Webmethod.aspx';
+
+/** Material option text: "<Name> || <SAP code> || Avail. Stock [ <qty> ] || <flag>". */
+function parseGenericMaterialOption(opt) {
+  const parts = opt.text.split('||').map((p) => p.trim());
+  const stockMatch = (parts[2] || '').match(/\[\s*([\d.,]+)\s*\]/);
+  return {
+    code: opt.value,
+    name: parts[0] || '',
+    sapCode: parts[1] || '',
+    availableQty: stockMatch ? Number(stockMatch[1].replace(/,/g, '')) : 0,
+    matFlag: parts[3] || '',
+    optionText: opt.text,
+  };
+}
+
+/** Batch option text: "<Batch>|Exp:<Mon-YYYY>|STK BAL:<qty>|MRP:<rate>|PTS:<rate>|". */
+function parseGenericBatchOption(opt) {
+  const parts = opt.text.split('|').map((p) => p.trim());
+  const find = (prefix) => {
+    const part = parts.find((p) => p.toUpperCase().startsWith(prefix));
+    return part ? part.slice(prefix.length).trim() : '';
+  };
+  return {
+    batch: opt.value,
+    expiry: find('EXP:'),
+    stockQty: Number(find('STK BAL:').replace(/,/g, '')) || 0,
+    mrp: Number(find('MRP:')) || 0,
+    pts: Number(find('PTS:')) || 0,
+  };
+}
 
 export class PharmaNetError extends Error {
   constructor(status, message) {
@@ -321,5 +353,125 @@ export class PharmaNetClient {
     const strarray = buildNormalOrderPayload(order);
     const d = await this.callWebMethod('OrderInsertDataForNormalRateOrder', { strarray });
     return d;
+  }
+
+  /**
+   * Generic Order ("Combo"/division-specific materials, frmGenericOrder.aspx)
+   * has no JSON webmethods for its dropdowns or its save — everything is a
+   * plain classic-ASP.NET full postback. `__EVENTTARGET` set to the changed
+   * control's full name triggers a complete re-render that includes the
+   * newly-populated dropdown(s), exactly like a browser onchange postback
+   * would. Each step's hiddenFields (ViewState etc.) must be carried into
+   * the next step's POST body or the server rejects it.
+   */
+  async openGenericOrderPage() {
+    const resp = await this.request(`${BASE_URL}${GENERIC_ORDER_PATH}`, { method: 'GET' });
+    const html = await resp.text();
+    return extractAllHiddenFields(html);
+  }
+
+  async selectGenericCustomer({ hiddenFields, plant = DEFAULT_PLANT, custNo }) {
+    const body = new URLSearchParams({
+      ...hiddenFields,
+      __EVENTTARGET: 'ctl00$ConPhameNet$ddlCustomer',
+      __EVENTARGUMENT: '',
+      'ctl00$ConPhameNet$ddlPlant': plant,
+      'ctl00$ConPhameNet$ddlCustomer': custNo,
+    });
+    const resp = await this.request(`${BASE_URL}${GENERIC_ORDER_PATH}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    const html = await resp.text();
+    return {
+      hiddenFields: extractAllHiddenFields(html),
+      materials: extractSelectOptions(html, 'ctl00$ConPhameNet$DDlMaterial')
+        .filter((o) => o.value !== '0')
+        .map(parseGenericMaterialOption),
+      billTo: extractSelectOptions(html, 'ctl00$ConPhameNet$ddlBillToAddress').filter((o) => o.value !== '0'),
+      shipTo: extractSelectOptions(html, 'ctl00$ConPhameNet$ddlShipToAddress').filter((o) => o.value !== '0'),
+      institutions: extractSelectOptions(html, 'ctl00$ConPhameNet$ddlInstitution').filter((o) => o.value !== '0'),
+    };
+  }
+
+  /** Selecting a material returns its batch list plus its division/doc-type/tax-class/pack-size (all per-material, not fixed constants). */
+  async selectGenericMaterial({ hiddenFields, plant = DEFAULT_PLANT, custNo, materialNo }) {
+    const body = new URLSearchParams({
+      ...hiddenFields,
+      __EVENTTARGET: 'ctl00$ConPhameNet$DDlMaterial',
+      __EVENTARGUMENT: '',
+      'ctl00$ConPhameNet$ddlPlant': plant,
+      'ctl00$ConPhameNet$ddlCustomer': custNo,
+      'ctl00$ConPhameNet$DDlMaterial': materialNo,
+    });
+    const resp = await this.request(`${BASE_URL}${GENERIC_ORDER_PATH}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    const html = await resp.text();
+    const hidden = extractAllHiddenFields(html);
+    return {
+      hiddenFields: hidden,
+      batches: extractSelectOptions(html, 'ctl00$ConPhameNet$ddlBatch')
+        .filter((o) => o.value !== '0')
+        .map(parseGenericBatchOption),
+      divisionNo: hidden['ctl00$ConPhameNet$HDivisionNo'],
+      docType: hidden['ctl00$ConPhameNet$HidDocType'],
+      taxClass: hidden['ctl00$ConPhameNet$HDTaxClass'],
+      packSize: Number(hidden['ctl00$ConPhameNet$hdnpcksz']) || 1,
+      materialName: hidden['ctl00$ConPhameNet$HMaterialName'],
+    };
+  }
+
+  /**
+   * Saves a real Generic Order. `order.lines` are already-built cart rows
+   * (one per material+batch — the same material split across several
+   * batches for FEFO is several rows sharing one rate, exactly like the
+   * page's own "Add" button recomputes one blended rate per material
+   * across all its batch rows). `hiddenFields` must be the latest state
+   * returned by selectGenericMaterial/selectGenericCustomer for this order.
+   */
+  async createGenericOrder(order) {
+    const {
+      hiddenFields,
+      plant = DEFAULT_PLANT,
+      custNo,
+      billToAddr,
+      shipToAddr,
+      institution = '0',
+      designation,
+      orderMode,
+      customerOrderNo = '',
+      empNo = '0',
+      empOther = '',
+      remark = '',
+      lines,
+    } = order;
+
+    const body = new URLSearchParams({
+      ...hiddenFields,
+      'ctl00$ConPhameNet$ddlPlant': plant,
+      'ctl00$ConPhameNet$ddlCustomer': custNo,
+      'ctl00$ConPhameNet$ddlBillToAddress': billToAddr,
+      'ctl00$ConPhameNet$ddlShipToAddress': shipToAddr,
+      'ctl00$ConPhameNet$ddlInstitution': institution,
+      'ctl00$ConPhameNet$drpDesignation': designation,
+      'ctl00$ConPhameNet$DDCOrderMode$DropDownList1': orderMode,
+      'ctl00$ConPhameNet$txtCustOrderNo': customerOrderNo,
+      'ctl00$ConPhameNet$txtOther': empOther,
+      'ctl00$ConPhameNet$hdnEmpNo': empNo,
+      'ctl00$ConPhameNet$HdrRemarks$txthdrRemarks': remark,
+      'ctl00$ConPhameNet$hidval': buildGenericOrderPayload(lines),
+      'ctl00$ConPhameNet$btnSave': 'Save',
+    });
+    const resp = await this.request(`${BASE_URL}${GENERIC_ORDER_PATH}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    const html = await resp.text();
+    return extractLabelText(html, 'ctl00_lblError') || 'Generic Order saved.';
   }
 }
