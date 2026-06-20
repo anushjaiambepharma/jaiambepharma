@@ -189,11 +189,22 @@ export class PharmaNetClient {
 
     return {
       pageUrl: url,
+      // The invoice page's "View Report" postback re-resolves the selected row
+      // from the *currently posted* search criteria, not from ViewState alone.
+      // The date range and type/customer dropdowns are editable controls (not
+      // <input type="hidden">), so extractAllHiddenFields misses them — if they
+      // aren't replayed on the View Report post, PharmaNET returns a 200 with a
+      // blank invoice template (empty Plnt/Cust/DocNo in the report URL).
+      // Captured from a real browser request: ddlCustomer is "0" (not "ALL"),
+      // and txtFromDate/txtToDate/hfSampleInvoice must be present.
       hiddenFields: {
         ...extractAllHiddenFields(resultHtml),
         'ctl00$ConPhameNet$ddlPlant': plant,
         'ctl00$ConPhameNet$ddlType': INVOICE_TYPE_CODE[invoiceType] || INVOICE_TYPE_CODE.ALL,
-        'ctl00$ConPhameNet$ddlCustomer': 'ALL',
+        'ctl00$ConPhameNet$ddlCustomer': '0',
+        'ctl00$ConPhameNet$txtFromDate': fromDate,
+        'ctl00$ConPhameNet$txtToDate': toDate,
+        'ctl00$ConPhameNet$hfSampleInvoice': '',
       },
       rows: parseGridRows(resultHtml, 'ctl00_ConPhameNet_gvTransactionDetails', INVOICE_COLUMNS),
     };

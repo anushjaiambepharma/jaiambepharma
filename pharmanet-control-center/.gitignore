@@ -2,3 +2,6 @@ node_modules/
 .wrangler/
 .dev.vars
 *.log
+
+# Local standalone server KV store
+.local-kv.json

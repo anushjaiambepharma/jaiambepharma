@@ -98,20 +98,43 @@ Division InvoiceType DownloadRequired Remarks
 `DocumentType` ∈ `INVOICE, CREDIT_NOTE, CREDIT_NOTE_TAX, DEBIT_NOTE, DEBIT_NOTE_TAX, RATE_CREDIT, RATE_DEBIT`.
 Dates must be `DD-MMM-YYYY` (e.g. `01-Jun-2026`).
 
-## Local development
+## Running the app (recommended: locally)
+
+Run the whole app on your own computer with plain Node.js — no Cloudflare
+account, no wrangler, no deployment. See `LOCAL_SETUP.md` for the
+step-by-step version.
 
 ```bash
-npm install
-npm run build:template   # regenerate public/templates/Download_Documents_Template.xlsx
-npm test                  # unit tests for validation/naming/grouping/csv/zip/order logic
-npm run dev                # wrangler pages dev — http://localhost:8788
+npm install                # one time
+npm start                  # node server.mjs — http://localhost:8788
 ```
 
-## Deployment (Cloudflare Pages)
+`npm start` runs `server.mjs`, which serves the frontend and reuses the exact
+same `functions/api/*` handlers and `src/*` logic as the Cloudflare version,
+with a file-backed shim (`.local-kv.json`) for the `LEARNED_MAPPINGS` KV
+store. Optional flags: `APP_PIN=1234 npm start`, `PORT=3000 npm start`.
 
-This project lives in the `pharmanet-control-center/` subfolder of the repo,
-not the repo root — set that as the **Root directory** if deploying via the
-Cloudflare dashboard's Git integration.
+> **Use local for bulk PDF download.** A whole "Run All" is processed in one
+> request and builds the output ZIP in memory. On Cloudflare that can exceed
+> the Worker CPU-time / ~128 MB memory limits for large batches or wide date
+> ranges (a single transaction search can return 9+ MB of HTML / thousands of
+> rows). Your own PC has no such caps, so run bulk downloads locally.
+
+Other useful scripts:
+
+```bash
+npm run build:template   # regenerate public/templates/Download_Documents_Template.xlsx
+npm test                  # unit tests for validation/naming/grouping/csv/zip/order logic
+npm run dev                # wrangler pages dev (emulates Cloudflare more closely)
+```
+
+## Deployment (Cloudflare Pages) — optional
+
+The app can still be deployed to Cloudflare Pages (the Sales Order wizard
+works well there), but **bulk PDF download should be run locally** for the
+reasons above. This project lives in the `pharmanet-control-center/`
+subfolder of the repo, not the repo root — set that as the **Root directory**
+if deploying via the Cloudflare dashboard's Git integration.
 
 **Dashboard (Git integration):**
 
@@ -163,26 +186,22 @@ against the real, authenticated PharmaNET portal:
 - **Search field IDs/values** (`ddlPlant`, `ddlDocType`, `ddlDivision`, doc
   type and division codes in `constants.js`) — all confirmed to match the
   live dropdowns exactly.
+- **Plain `INVOICE` bulk download** (`FrmCustomerInvoicePrint.aspx`) — now
+  **working**. An earlier attempt returned a `200` with a structurally valid
+  but **blank** PDF (`Cust`/`Plnt`/`DocNo` empty in the `frmViewReport.aspx`
+  URL). A captured HAR of a real "View Report" click showed why: the invoice
+  page re-resolves the selected row from the *currently posted* search
+  criteria, so the "View Report" postback must replay the visible search
+  fields — `txtFromDate`, `txtToDate`, `ddlType`, `ddlCustomer` (value `0`,
+  not `ALL`), and `hfSampleInvoice` — none of which are `<input type=hidden>`,
+  so `extractAllHiddenFields` had been dropping them. With those replayed,
+  `btnViewReport` returns the correct
+  `frmViewReport.aspx?rept=CUSTInvoice&Plnt=,1172,&Cust=,9007630,&DocType=,ZOR2,&DocNo=,…`
+  URL and a real PDF. `viewReport()`'s blank-identifier guard (`=,,` / `=,&`)
+  remains as a safety net.
 
 **Known not to work — do not rely on yet:**
 
-- **Plain `INVOICE` bulk download** (`FrmCustomerInvoicePrint.aspx`) is
-  **disabled** in `runner.js` (rows are logged as `NOT_IMPLEMENTED`). Live
-  testing showed the row-to-report mapping is broken: triggering "View" for a
-  specific invoice row (via either the per-row `lbView` link or the
-  checkbox+`btnViewReport` button) returns a `200` with a **structurally
-  valid but blank PDF template** — `Cust`/`Plnt`/`DocNo` come back empty in
-  the `frmViewReport.aspx` query string instead of erroring. The credit/debit
-  page passes those identifiers through a `GridView.DataKeys`-style
-  mechanism that the invoice page apparently doesn't expose the same way; the
-  real lookup mechanism needs a captured browser network trace (e.g. a HAR
-  file from clicking "View" on a real invoice) to reverse-engineer correctly.
-  `PharmaNetClient.viewReport()` also now hard-fails on any report URL with
-  blank bracketed identifiers (`=,,` or `=,&`), so even if this path is
-  re-enabled by mistake it won't silently ship a wrong file.
-- **`searchInvoices()` itself works** (search/filter/grid-parsing on the
-  invoice print page is confirmed correct — only the per-row "View" action is
-  broken), so it's reusable once the report-URL mechanism is solved.
 - **Order generation from `Invoice_Header` / `Invoice_Items` sheets** (the
   bulk-automation tool's original spec) is still not implemented — order
   creation is instead handled by the separate, live-verified **Sales Order

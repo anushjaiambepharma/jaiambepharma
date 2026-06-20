@@ -221,16 +221,18 @@
       const dataUrl = await fileToDataUrl(state.file);
       const sourceExcelBase64 = dataUrl.split(',')[1];
 
-      const result = await apiFetch('/api/run-all', {
-        method: 'POST',
-        body: JSON.stringify({
+      const result = await runAllStreaming(
+        {
           userId: state.pnUserId,
           password: state.pnPassword,
           rows: state.validatedRows,
           sourceExcelBase64,
           sourceExcelName: state.file.name,
-        }),
-      });
+        },
+        (completed, total, status, party) => {
+          progress.textContent = `Processed ${completed} / ${total} — ${status}: ${party}`;
+        }
+      );
 
       state.runResult = result;
       renderResults(result);
@@ -241,6 +243,45 @@
       btn.disabled = false;
     }
   });
+
+  // Run All can take several minutes for a few hundred rows. The server
+  // streams one NDJSON line per row as it's processed (instead of one
+  // buffered response at the end) so the connection stays visibly alive;
+  // read it line-by-line and surface progress as it arrives.
+  async function runAllStreaming(body, onProgress) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (state.appPin) headers['X-App-Pin'] = state.appPin;
+    const resp = await fetch('/api/run-all', { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      throw new Error(data.error || `Request failed (${resp.status})`);
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newlineIndex;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+        if (!line.trim()) continue;
+        const msg = JSON.parse(line);
+        if (msg.type === 'progress') {
+          onProgress(msg.completed, msg.total, msg.status, msg.party);
+        } else if (msg.type === 'done') {
+          return { summary: msg.summary, log: msg.log, failedRows: msg.failedRows, zipBase64: msg.zipBase64 };
+        } else if (msg.type === 'error') {
+          throw new Error(msg.message);
+        }
+      }
+    }
+    throw new Error('Run All connection ended before a result was received.');
+  }
 
   function fileToDataUrl(file) {
     return new Promise((resolve, reject) => {
