@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PharmaNET Control Center</title>
+<link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <div>
+      <h1>PharmaNET Control Center</h1>
+      <p>Excel-first bulk automation for Intas PharmaNET CSA</p>
+    </div>
+  </header>
+
+  <div class="steps-nav" id="stepsNav"></div>
+
+  <!-- Step 1: App PIN -->
+  <section class="panel" id="panel-pin">
+    <h2>1. App PIN</h2>
+    <p class="helper-text">Enter the App PIN configured by your administrator. This is skipped if no PIN is required.</p>
+    <label for="appPin">App PIN</label>
+    <input type="password" id="appPin" autocomplete="off" />
+    <div class="btn-row">
+      <button class="btn" id="btnCheckPin">Continue</button>
+    </div>
+    <p class="error-text hidden" id="pinError"></p>
+  </section>
+
+  <!-- Step 2: PharmaNET login -->
+  <section class="panel hidden" id="panel-login">
+    <h2>2. PharmaNET Login</h2>
+    <p class="helper-text">Entered once per session. Never stored, never logged.</p>
+    <label for="pnUserId">PharmaNET User ID</label>
+    <input type="text" id="pnUserId" autocomplete="off" />
+    <label for="pnPassword">PharmaNET Password</label>
+    <input type="password" id="pnPassword" autocomplete="off" />
+    <div class="btn-row">
+      <button class="btn" id="btnLoginContinue">Continue</button>
+    </div>
+  </section>
+
+  <!-- Step 3: Upload -->
+  <section class="panel hidden" id="panel-upload">
+    <h2>3. Upload Excel</h2>
+    <p class="helper-text">Upload your Download_Documents workbook. No need to re-type any party, document, or date data.</p>
+    <a class="btn secondary" href="/templates/Download_Documents_Template.xlsx" download>Download Excel Template</a>
+    <label for="excelFile">Excel File (.xlsx)</label>
+    <input type="file" id="excelFile" accept=".xlsx,.xls" />
+    <div class="btn-row">
+      <button class="btn" id="btnValidate" disabled>Validate Excel</button>
+    </div>
+    <p class="error-text hidden" id="uploadError"></p>
+  </section>
+
+  <!-- Step 4: Summary -->
+  <section class="panel hidden" id="panel-summary">
+    <h2>4. Validation Summary</h2>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="row-table-wrap">
+      <table class="row-table" id="rowsTable">
+        <thead>
+          <tr>
+            <th>#</th><th>Status</th><th>TaskType</th><th>DocType</th><th>Party</th><th>DocNo</th><th>From</th><th>To</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="rowsTableBody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btnRunAll">Run All</button>
+    </div>
+    <p class="progress-line hidden" id="runProgress"></p>
+  </section>
+
+  <!-- Step 5: Results -->
+  <section class="panel hidden" id="panel-results">
+    <h2>5. Results</h2>
+    <div class="summary-grid" id="resultSummaryGrid"></div>
+    <div class="btn-row">
+      <button class="btn" id="btnDownloadZip">Download All ZIP</button>
+      <button class="btn secondary" id="btnDownloadFailed">Download Failed Rows</button>
+      <button class="btn secondary" id="btnDownloadLog">Download Process Log</button>
+    </div>
+    <div class="row-table-wrap">
+      <table class="row-table" id="resultsTable">
+        <thead>
+          <tr>
+            <th>#</th><th>Status</th><th>DocType</th><th>Party</th><th>DocNo</th><th>PDF</th><th>Error</th>
+          </tr>
+        </thead>
+        <tbody id="resultsTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "pharmanet-control-center",
+  "version": "1.0.0",
+  "description": "Excel-first bulk automation for the Intas PharmaNET CSA portal.",
+  "type": "module",
+  "scripts": {
+    "build:template": "node scripts/build-template.mjs",
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public",
+    "test": "node --test ./test/*.test.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "wrangler": "^4.103.0",
+    "xlsx": "^0.18.5"
+  }
+}
