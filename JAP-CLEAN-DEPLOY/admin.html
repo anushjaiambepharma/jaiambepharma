@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<base href="/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JAP Admin CRM 2026 — Jai Ambe Pharma</title>
+<link rel="stylesheet" href="/css/style.css?v=46">
+<link rel="stylesheet" href="/css/jap-premium.css?v=46">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── Base ── */
+body { background:#f0f2f5; font-family:'Sora',sans-serif; }
+#page-auth  { display:flex; }
+#page-admin { display:none; flex-direction:column; min-height:100vh; }
+.admin-body { flex:1; overflow-y:auto; background:#f0f2f5; }
+.admin-content { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
+.tab-pane { display:none; } .tab-pane.on { display:block; }
+
+/* ── Top nav ── */
+.admin-topnav {
+  background:#1a1a2e; display:flex; overflow-x:auto;
+  scrollbar-width:none; gap:2px; padding:0 8px;
+}
+.admin-topnav::-webkit-scrollbar { display:none; }
+.atnav-tab {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:10px 14px; font-size:11px; font-weight:500; color:rgba(255,255,255,.55);
+  border:none; background:none; cursor:pointer; white-space:nowrap;
+  border-bottom:2.5px solid transparent; transition:all .18s; flex-shrink:0;
+}
+.atnav-tab .bni { font-size:16px; }
+.atnav-tab:hover { color:rgba(255,255,255,.85); }
+.atnav-tab.active { color:#fff; border-bottom-color:#c97d0a; background:rgba(255,255,255,.06); }
+
+/* ── Section headers ── */
+.page-title { font-size:20px; font-weight:700; color:#1a1a1a; margin-bottom:4px; font-family:'Fraunces',serif; }
+.page-sub   { font-size:12.5px; color:#6b6560; margin-bottom:20px; }
+
+/* ── Cards ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.kpi-card {
+  background:#fff; border-radius:14px; padding:18px 16px;
+  border:1px solid #e8e3dc; box-shadow:0 2px 8px rgba(0,0,0,.05);
+  position:relative; overflow:hidden;
+}
+.kpi-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:var(--kpi-color,#0b6e72);
+}
+.kpi-icon  { font-size:22px; margin-bottom:8px; }
+.kpi-num   { font-size:28px; font-weight:700; color:#1a1a1a; line-height:1; font-family:'Fraunces',serif; }
+.kpi-label { font-size:11px; color:#6b6560; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+.kpi-delta { font-size:11px; font-weight:600; margin-top:4px; }
+.kpi-delta.up   { color:#145c30; }
+.kpi-delta.down { color:#b5252b; }
+
+/* ── Chart cards ── */
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+.chart-box {
+  background:#fff; border-radius:14px; padding:18px;
+  border:1px solid #e8e3dc; box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.chart-box.wide { grid-column:1/-1; }
+.chart-title { font-size:13px; font-weight:700; color:#1a1a1a; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.chart-badge { font-size:10px; padding:2px 8px; border-radius:50px; background:#e6f5f5; color:#0b6e72; font-weight:600; }
+
+/* ── Alert cards ── */
+.alert-box {
+  border-radius:12px; padding:14px 16px; margin-bottom:10px;
+  display:flex; align-items:flex-start; gap:12px;
+}
+.alert-box.danger  { background:#fde8e8; border:1px solid #fca5a5; }
+.alert-box.warn    { background:#fff3cd; border:1px solid #fde68a; }
+.alert-box.info    { background:#e6f0ff; border:1px solid #93c5fd; }
+.alert-box.success { background:#e8f5e9; border:1px solid #86efac; }
+.alert-icon { font-size:20px; flex-shrink:0; }
+.alert-title { font-size:13px; font-weight:700; color:#1a1a1a; margin-bottom:2px; }
+.alert-body  { font-size:12px; color:#555; line-height:1.5; }
+
+/* ── AI chat ── */
+.ai-chat-wrap {
+  background:#fff; border-radius:16px; border:1px solid #e8e3dc;
+  box-shadow:0 2px 16px rgba(0,0,0,.06); overflow:hidden;
+}
+.ai-chat-hd {
+  background:linear-gradient(135deg,#1a1a2e,#2d2d44);
+  padding:16px 20px; display:flex; align-items:center; gap:12px;
+}
+.ai-chat-hd-text h3 { font-size:15px; font-weight:700; color:#fff; margin:0 0 2px; }
+.ai-chat-hd-text p  { font-size:11.5px; color:rgba(255,255,255,.6); margin:0; }
+.ai-chat-messages {
+  min-height:260px; max-height:420px; overflow-y:auto;
+  padding:16px; display:flex; flex-direction:column; gap:12px;
+  background:#f8f9fa;
+}
+.ai-msg { max-width:85%; padding:12px 16px; border-radius:14px; font-size:13px; line-height:1.6; }
+.ai-msg.user { background:#0b6e72; color:#fff; align-self:flex-end; border-radius:14px 14px 2px 14px; }
+.ai-msg.bot  { background:#fff; color:#1a1a1a; align-self:flex-start; border:1px solid #e8e3dc; border-radius:14px 14px 14px 2px; }
+.ai-msg.bot .ai-thinking { color:#0b6e72; font-style:italic; font-size:12px; }
+.ai-chat-input {
+  padding:14px 16px; border-top:1px solid #e8e3dc; display:flex; gap:10px; background:#fff;
+}
+.ai-input-box {
+  flex:1; padding:10px 14px; border-radius:10px; border:1.5px solid #e8e3dc;
+  font-family:'Sora',sans-serif; font-size:13px; resize:none;
+  transition:border-color .18s; outline:none;
+}
+.ai-input-box:focus { border-color:#0b6e72; }
+.ai-send-btn {
+  padding:10px 20px; background:#0b6e72; color:#fff; border:none;
+  border-radius:10px; font-size:13px; font-weight:700; cursor:pointer;
+  font-family:'Sora',sans-serif; transition:background .18s; white-space:nowrap;
+}
+.ai-send-btn:hover { background:#0e8a90; }
+.ai-send-btn:disabled { background:#ccc; cursor:not-allowed; }
+.ai-quick-btns { display:flex; gap:8px; flex-wrap:wrap; padding:10px 16px 0; }
+.ai-quick-btn  {
+  padding:6px 14px; border-radius:50px; border:1.5px solid #0b6e72;
+  background:transparent; color:#0b6e72; font-size:11.5px; font-weight:600;
+  cursor:pointer; font-family:'Sora',sans-serif; transition:all .18s;
+}
+.ai-quick-btn:hover { background:#0b6e72; color:#fff; }
+
+/* ── Inventory table ── */
+.inv-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+.inv-table th {
+  background:#1a1a2e; color:#fff; padding:10px 12px;
+  text-align:left; font-size:11px; font-weight:600; letter-spacing:.4px;
+}
+.inv-table td { padding:10px 12px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+.inv-table tr:hover td { background:#f8f9fa; }
+.stock-bar-wrap { width:80px; background:#e5e7eb; border-radius:50px; height:6px; display:inline-block; vertical-align:middle; }
+.stock-bar { height:100%; border-radius:50px; }
+
+/* ── Supplier cards ── */
+.supplier-card {
+  background:#fff; border-radius:12px; border:1px solid #e8e3dc;
+  padding:16px; display:flex; align-items:center; gap:14px; margin-bottom:10px;
+}
+.supplier-avatar {
+  width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,#0b6e72,#0e8a90);
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+  color:#fff; flex-shrink:0; font-weight:700;
+}
+.perf-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
+.perf-dot.green  { background:#145c30; }
+.perf-dot.yellow { background:#f59e0b; }
+.perf-dot.red    { background:#b5252b; }
+
+/* ── Returns ── */
+.return-card {
+  background:#fff; border-radius:12px; border:1px solid #e8e3dc;
+  padding:14px 16px; margin-bottom:10px;
+}
+
+/* ── Audit log ── */
+.audit-row {
+  display:flex; align-items:center; gap:12px; padding:10px 0;
+  border-bottom:1px solid #f0f0f0; font-size:12.5px;
+}
+.audit-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+
+/* ── Modals ── */
+.modal-overlay { display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,.6); align-items:center; justify-content:center; padding:16px; }
+.modal-box { background:#fff; border-radius:18px; width:100%; max-width:640px; max-height:88vh; overflow-y:auto; box-shadow:0 24px 80px rgba(0,0,0,.25); }
+.modal-hd { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #e8e3dc; position:sticky; top:0; background:#fff; z-index:1; }
+.modal-hd h3 { font-size:16px; font-weight:700; margin:0; }
+.modal-close { background:none; border:none; font-size:24px; cursor:pointer; color:#6b6560; padding:4px; line-height:1; }
+
+/* ── Misc ── */
+.filter-row { display:flex; gap:10px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+.filter-row select, .filter-row input {
+  padding:8px 13px; border-radius:9px; border:1.5px solid #e8e3dc;
+  background:#fff; font-family:'Sora',sans-serif; font-size:13px;
+}
+.export-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.btn-exp { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:9px; font-size:12.5px; font-weight:600; cursor:pointer; border:none; transition:all .18s; }
+.btn-exp-green { background:#1d6f42; color:#fff; }
+.btn-exp-red   { background:#c0392b; color:#fff; }
+.btn-exp-wa    { background:#25D366; color:#fff; }
+.btn-exp-teal  { background:#0b6e72; color:#fff; }
+.party-search-wrap { position:relative; margin-bottom:12px; }
+.party-search-input { width:100%; padding:10px 40px 10px 14px; border-radius:10px; border:1.5px solid #e8e3dc; background:#fff; font-family:'Sora',sans-serif; font-size:16px; color:#1a1a1a; outline:none; }
+.party-search-input:focus { border-color:#0b6e72; }
+.party-search-clear { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:#6b6560; font-size:16px; cursor:pointer; }
+.settings-block { background:#fff; border:1px solid #e8e3dc; border-radius:14px; padding:22px; margin-bottom:16px; }
+.settings-block h3 { font-size:14.5px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.notif-card { background:linear-gradient(135deg,#0b6e72,#0e8a90); border-radius:14px; padding:20px; color:#fff; margin-bottom:16px; }
+.badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:50px; font-size:11px; font-weight:600; }
+.badge-new        { background:#1a1a1a; color:#fff; }
+.badge-processing { background:#fff3cd; color:#915c00; }
+.badge-done       { background:#e8f5e9; color:#145c30; }
+.badge-active     { background:#e8f5e9; color:#145c30; }
+.badge-inactive   { background:#f0f0f0; color:#6b6560; }
+.badge-high       { background:#fde8e8; color:#b5252b; }
+.badge-medium     { background:#fff3cd; color:#92400e; }
+.badge-low        { background:#f0f0f0; color:#6b6560; }
+.order-card { background:#fff; border:1px solid #e8e3dc; border-radius:12px; overflow:hidden; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.order-card-hd { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #f0ece6; }
+.order-no { font-size:13.5px; font-weight:700; }
+.order-actions { display:flex; gap:8px; padding:10px 14px; flex-wrap:wrap; }
+.stat-card { background:#fff; border-radius:12px; border:1px solid #e8e3dc; padding:16px; text-align:center; }
+.stat-num  { font-family:'Fraunces',serif; font-size:28px; font-weight:700; color:#0b6e72; line-height:1; margin-bottom:4px; }
+.stat-lbl  { font-size:11px; color:#6b6560; font-weight:500; text-transform:uppercase; letter-spacing:.5px; }
+
+@media(max-width:599px){
+  .kpi-grid   { grid-template-columns:1fr 1fr; }
+  .chart-grid { grid-template-columns:1fr; }
+  .chart-box.wide { grid-column:auto; }
+}
+@media(min-width:900px){
+  .kpi-grid { grid-template-columns:repeat(4,1fr); }
+}
+</style>
+</head>
+<body>
+<div id="toast-wrap"></div>
+
+<!-- ═══ AUTH ═══ -->
+<div id="page-auth" class="auth-page">
+  <div class="auth-card">
+    <div style="text-align:center;margin-bottom:12px"><div style="font-size:52px">🏥</div></div>
+    <div class="auth-logo">JAP <span>Admin</span></div>
+    <div class="auth-sub">CRM · Inventory · AI Analytics 2026</div>
+    <div class="field">
+      <label>Admin Password</label>
+      <input id="admin-pw" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    </div>
+    <button id="admin-login-btn" class="btn btn-teal btn-full" onclick="doAdminLogin()">Login →</button>
+    <a href="/index.html" class="auth-back">← Back to home</a>
+  </div>
+</div>
+
+<!-- ═══ ADMIN APP ═══ -->
+<div id="page-admin">
+  <header class="site-header" style="background:#1a1a2e;border-bottom:none">
+    <div class="site-header-inner">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:26px">🏥</div>
+        <div>
+          <div class="logo" style="color:#fff">JAP <span style="color:#c97d0a">CRM</span><small style="color:rgba(255,255,255,.4)">2026 — AI-Powered Admin</small></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="ai-status-dot" style="width:8px;height:8px;border-radius:50%;background:#145c30;margin-right:2px" title="AI Connected"></div>
+        <button class="btn-refresh" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.8)" onclick="adminRefresh()">🔄 <span>Refresh</span></button>
+        <button class="btn btn-sm btn-ghost" onclick="doAdminLogout()">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="admin-topnav">
+    <button class="atnav-tab active" onclick="switchAdminTab('dashboard',this)"><span class="bni">📊</span>Dashboard</button>
+    <button class="atnav-tab" onclick="switchAdminTab('ai',this)"><span class="bni">🤖</span>AI Insights</button>
+    <button class="atnav-tab" onclick="switchAdminTab('orders',this)"><span class="bni">📦</span>Orders</button>
+    <button class="atnav-tab" onclick="switchAdminTab('inventory',this)"><span class="bni">🏭</span>Inventory</button>
+    <button class="atnav-tab" onclick="switchAdminTab('analytics',this)"><span class="bni">📈</span>Analytics</button>
+    <button class="atnav-tab" onclick="switchAdminTab('forecast',this)"><span class="bni">🔮</span>Forecast</button>
+    <button class="atnav-tab" onclick="switchAdminTab('parties',this)"><span class="bni">🏪</span>CRM</button>
+    <button class="atnav-tab" onclick="switchAdminTab('devices',this)"><span class="bni">📱</span>Devices</button>
+    <span style="display:none" id="suppliers-nav-btn" aria-hidden="true"><button class="atnav-tab"><span class="bni">🚛</span>Suppliers</button></span><!-- FIX #4: Suppliers hidden -->
+    <button class="atnav-tab" onclick="switchAdminTab('returns',this)"><span class="bni">↩️</span>Returns</button>
+    <button class="atnav-tab" onclick="switchAdminTab('notifications',this)"><span class="bni">🔔</span>Notify</button>
+    <button class="atnav-tab" onclick="switchAdminTab('products',this)"><span class="bni">💊</span>Products</button>
+    <button class="atnav-tab" onclick="switchAdminTab('audit',this)"><span class="bni">🔐</span>Audit</button>
+    <button class="atnav-tab" onclick="switchAdminTab('settings',this)"><span class="bni">⚙️</span>Settings</button>
+  </nav>
+
+  <div class="admin-body">
+   <div class="admin-content">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div id="atab-dashboard" class="tab-pane on">
+      <div class="page-title">Command Centre</div>
+      <div class="page-sub">Real-time overview of orders, inventory, and business health</div>
+
+      <!-- Smart Alerts -->
+      <div id="smart-alerts" style="margin-bottom:18px"></div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid" style="margin-bottom:20px">
+        <div class="kpi-card" style="--kpi-color:#0b6e72">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-num" id="s-today">—</div>
+          <div class="kpi-label">Today's Orders</div>
+          <div class="kpi-delta" id="delta-today"></div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#c97d0a">
+          <div class="kpi-icon">📋</div>
+          <div class="kpi-num" id="s-total">—</div>
+          <div class="kpi-label">Total Orders</div>
+          <div class="kpi-delta up" id="delta-total"></div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#145c30">
+          <div class="kpi-icon">🏪</div>
+          <div class="kpi-num" id="s-parties">—</div>
+          <div class="kpi-label">Active Parties</div>
+          <div class="kpi-delta" id="delta-parties"></div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#5b3fa6">
+          <div class="kpi-icon">💊</div>
+          <div class="kpi-num" id="s-products">—</div>
+          <div class="kpi-label">Products Synced</div>
+          <div class="kpi-delta" id="delta-products"></div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="chart-grid">
+        <div class="chart-box">
+          <div class="chart-title">📅 Orders Last 14 Days <span class="chart-badge">Daily</span></div>
+          <canvas id="chart-weekly" height="150"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">⚡ Order Status Distribution</div>
+          <canvas id="chart-status" height="150"></canvas>
+        </div>
+      </div>
+
+      <!-- Charts Row 2 -->
+      <div class="chart-grid">
+        <div class="chart-box">
+          <div class="chart-title">🏆 Top 10 Ordering Parties</div>
+          <canvas id="chart-parties" height="180"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">🌆 Revenue by City</div>
+          <canvas id="chart-cities" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+        <button class="btn-exp btn-exp-wa" onclick="sendDailySummaryWa()">📲 WA Daily Summary</button>
+        <button class="btn-exp btn-exp-teal" onclick="switchAdminTab('ai',document.querySelector('[onclick*=\\'ai\\']'))">🤖 Ask AI Analyst</button>
+        <button class="btn-exp btn-exp-green" onclick="exportExcel()">📊 Export CSV</button>
+      </div>
+
+      <div style="font-size:13.5px;font-weight:700;margin-bottom:12px">🕐 Recent Orders</div>
+      <div id="recent-orders"><div class="loading-box"><div class="spinner"></div><p>Loading…</p></div></div>
+    </div>
+
+    <!-- ═══ AI INSIGHTS ═══ -->
+    <div id="atab-ai" class="tab-pane">
+      <div class="page-title">🤖 AI Business Analyst</div>
+      <div class="page-sub">Powered by Claude AI — Ask anything about your orders, inventory, parties, or demand patterns</div>
+
+      <div class="ai-chat-wrap" style="margin-bottom:20px">
+        <div class="ai-chat-hd">
+          <div style="width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🤖</div>
+          <div class="ai-chat-hd-text">
+            <h3>JAP AI Analyst</h3>
+            <p>Trained on your live order data · Demand forecasting · Reorder alerts · CRM insights</p>
+          </div>
+        </div>
+        <div class="ai-quick-btns">
+          <button class="ai-quick-btn" onclick="aiQuick('Which products have the highest demand this month and what is the suggested MOQ?')">📦 MOQ Suggestions</button>
+          <button class="ai-quick-btn" onclick="aiQuick('Which parties have not placed an order in the last 30 days? List them with their city.')">😴 Inactive Parties</button>
+          <button class="ai-quick-btn" onclick="aiQuick('What are the top 5 slow-moving products I should reduce stock on?')">🐢 Slow Movers</button>
+          <button class="ai-quick-btn" onclick="aiQuick('Give me a demand forecast for next month based on current trends.')">📈 Demand Forecast</button>
+          <button class="ai-quick-btn" onclick="aiQuick('Which cities have the most growth potential based on order data?')">🌆 Growth Cities</button>
+          <button class="ai-quick-btn" onclick="aiQuick('Show me the complete business health report with actionable recommendations.')">📋 Health Report</button>
+        </div>
+        <div class="ai-chat-messages" id="ai-messages">
+          <div class="ai-msg bot">
+            👋 Hello! I'm your <strong>JAP AI Business Analyst</strong>.<br><br>
+            I have access to your complete order history, party data, and product catalog. Ask me anything:
+            <ul style="margin:8px 0 0 16px;line-height:2">
+              <li>Demand forecasting and MOQ recommendations</li>
+              <li>Slow-moving or fast-moving products</li>
+              <li>Party segmentation and at-risk customers</li>
+              <li>Reorder alerts and inventory health</li>
+              <li>City-wise performance analysis</li>
+            </ul>
+          </div>
+        </div>
+        <div class="ai-chat-input">
+          <textarea class="ai-input-box" id="ai-input" rows="2" placeholder="Ask me about demand trends, reorder suggestions, party performance…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMessage();}"></textarea>
+          <button class="ai-send-btn" id="ai-send-btn" onclick="sendAIMessage()">Send ↑</button>
+        </div>
+      </div>
+
+      <!-- AI Auto Insights -->
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px">🔍 Auto-Generated Insights</div>
+      <div id="ai-auto-insights"><div class="loading-box"><div class="spinner"></div><p>Generating insights from your data…</p></div></div>
+    </div>
+
+    <!-- ═══ ORDERS ═══ -->
+    <div id="atab-orders" class="tab-pane">
+      <div class="page-title">Order Management</div>
+      <div class="page-sub">Track, filter, and manage all customer orders</div>
+      <div class="export-bar">
+        <button class="btn-exp btn-exp-green" onclick="exportExcel()">📊 CSV Export</button>
+        <button class="btn-exp btn-exp-red"   onclick="exportPDF()">📄 Print PDF</button>
+        <button class="btn-exp btn-exp-wa"    onclick="sendDailySummaryWa()">📲 Today's Summary</button>
+        <button class="btn-exp btn-exp-teal"  onclick="loadOrders()">🔄 Refresh</button>
+      </div>
+      <div class="filter-row">
+        <select id="order-filter" onchange="renderOrders()">
+          <option value="all">All Status</option>
+          <option value="New">🆕 New</option>
+          <option value="Processing">⏳ Processing</option>
+          <option value="Done">✅ Done</option>
+        </select>
+        <select id="order-date-filter" onchange="renderOrders()">
+          <option value="all">All Dates</option>
+          <option value="today">📅 Today</option>
+          <option value="week">📆 This Week</option>
+          <option value="month">🗓 This Month</option>
+        </select>
+        <input id="order-search" type="search" placeholder="🔍 Search party, product, code…" oninput="renderOrders()" style="flex:1;min-width:180px">
+      </div>
+      <div style="font-size:12px;color:#6b6560;margin-bottom:10px" id="order-count"></div>
+      <div id="orders-list"><div class="loading-box"><div class="spinner"></div><p>Loading…</p></div></div>
+    </div>
+
+    <!-- ═══ INVENTORY ═══ -->
+    <div id="atab-inventory" class="tab-pane">
+      <div class="page-title">Inventory Health</div>
+      <div class="page-sub">Stock levels, reorder alerts, aging analysis, and MOQ tracking</div>
+
+      <div class="kpi-grid" style="margin-bottom:20px">
+        <div class="kpi-card" style="--kpi-color:#0b6e72">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-num" id="inv-total-skus">—</div>
+          <div class="kpi-label">Total SKUs</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#b5252b">
+          <div class="kpi-icon">🚨</div>
+          <div class="kpi-num" id="inv-reorder-count">—</div>
+          <div class="kpi-label">Reorder Alerts</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#f59e0b">
+          <div class="kpi-icon">🐢</div>
+          <div class="kpi-num" id="inv-slow-count">—</div>
+          <div class="kpi-label">Slow Movers</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#145c30">
+          <div class="kpi-icon">🔥</div>
+          <div class="kpi-num" id="inv-fast-count">—</div>
+          <div class="kpi-label">Fast Movers</div>
+        </div>
+      </div>
+
+      <!-- Reorder Alerts -->
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px">🚨 Reorder Alerts</div>
+      <div id="reorder-alerts" style="margin-bottom:20px"><div class="loading-box"><div class="spinner"></div></div></div>
+
+      <!-- Stock Aging -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700">📊 Product Demand & Stock Analysis</div>
+        <input id="inv-search" type="search" placeholder="Filter products…" oninput="filterInventory()" style="padding:7px 12px;border-radius:8px;border:1.5px solid #e8e3dc;font-size:16px;width:200px">
+      </div>
+      <div style="overflow-x:auto;border-radius:12px;border:1px solid #e8e3dc">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>Product</th><th>Code</th><th>Company</th>
+              <th style="text-align:center">Orders</th>
+              <th style="text-align:center">Avg Box/Order</th>
+              <th style="text-align:center">Demand Level</th>
+              <th style="text-align:center">Suggested MOQ</th>
+              <th style="text-align:center">Last Ordered</th>
+              <th style="text-align:center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:#6b6560">Loading inventory data…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ ANALYTICS ═══ -->
+    <div id="atab-analytics" class="tab-pane">
+      <div class="page-title">Advanced Analytics</div>
+      <div class="page-sub">Deep-dive into trends, party segments, product performance, and city growth</div>
+      <div style="padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="font-size:13px;font-weight:600">Date range:</label>
+        <select id="analytics-date-range" onchange="buildAnalytics()" style="border:1px solid #ddd;border-radius:8px;padding:6px 10px;font-size:13px">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="365">Last year</option>
+          <option value="99999">All time</option>
+        </select>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-box wide">
+          <div class="chart-title">📅 30-Day Order Trend <span class="chart-badge">Daily Volume</span></div>
+          <canvas id="chart-trend" height="100"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-box">
+          <div class="chart-title">🏆 Party A/B/C Segmentation</div>
+          <div style="font-size:11.5px;color:#6b6560;margin-bottom:12px">
+            🟢 <strong>A</strong> = Top performers &nbsp; 🟡 <strong>B</strong> = Mid-tier &nbsp; ⚫ <strong>C</strong> = At-risk
+          </div>
+          <div id="party-segments" style="max-height:320px;overflow-y:auto"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">💊 Top Products by Order Volume</div>
+          <canvas id="chart-product-mix" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-box">
+          <div class="chart-title">📈 Order Fill Rate by Status</div>
+          <canvas id="chart-fill" height="160"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">⏱ Average Order Duration</div>
+          <div id="duration-stats" style="padding:10px 0"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ FORECAST ═══ -->
+    <div id="atab-forecast" class="tab-pane">
+      <div class="page-title">AI Demand Forecast & MOQ</div>
+      <div class="page-sub">Machine-learning demand signals from order history — reorder suggestions, stock turn rates, and purchase recommendations</div>
+
+      <div class="chart-grid" style="margin-bottom:20px">
+        <div class="chart-box wide">
+          <div class="chart-title">📈 7-Day Forecast vs Actual <span class="chart-badge">Predictive</span></div>
+          <canvas id="chart-forecast-line" height="110"></canvas>
+        </div>
+      </div>
+
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px">📋 Product Demand Intelligence Table</div>
+      <div id="forecast-table"><div class="loading-box"><div class="spinner"></div><p>Calculating…</p></div></div>
+    </div>
+
+    <!-- ═══ CRM / PARTIES ═══ -->
+    <div id="atab-devices" class="tab-pane">
+      <div class="page-title">Devices — Approval &amp; Permissions</div>
+      <div class="page-sub">Approve each device here. All permission checkboxes live on the <strong>Devices</strong> sheet: all checked = full access; uncheck to withdraw a permission for that device.</div>
+      <div style="display:flex;gap:8px;align-items:center;margin:10px 0 14px">
+        <input id="device-search" type="text" placeholder="Search shop / mobile / code…" oninput="renderDevices()" style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid #e8e3dc;font-family:'Sora',sans-serif;font-size:15px">
+        <button class="btn btn-sm btn-outline" onclick="loadDevices()">🔄 Refresh</button>
+      </div>
+      <div id="devices-count" style="font-size:12px;color:#6b6560;margin-bottom:8px"></div>
+      <div id="devices-list"></div>
+    </div>
+
+    <div id="atab-parties" class="tab-pane">
+      <div class="page-title">CRM — Party Management</div>
+      <div class="page-sub">Customer lifetime value, order patterns, segmentation, and engagement scoring</div>
+
+      <div class="kpi-grid" style="margin-bottom:20px">
+        <div class="kpi-card" style="--kpi-color:#0b6e72">
+          <div class="kpi-icon">🏪</div>
+          <div class="kpi-num" id="crm-total">—</div>
+          <div class="kpi-label">Total Parties</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#145c30">
+          <div class="kpi-icon">🟢</div>
+          <div class="kpi-num" id="crm-active">—</div>
+          <div class="kpi-label">Active (30d)</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#b5252b">
+          <div class="kpi-icon">😴</div>
+          <div class="kpi-num" id="crm-inactive">—</div>
+          <div class="kpi-label">Inactive (30d+)</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#c97d0a">
+          <div class="kpi-icon">⭐</div>
+          <div class="kpi-num" id="crm-vip">—</div>
+          <div class="kpi-label">VIP Parties</div>
+        </div>
+      </div>
+
+      <div class="party-search-wrap">
+        <input class="party-search-input" id="party-search" type="search" placeholder="🔍 Search by name, mobile, or city…" oninput="filterParties()">
+        <button class="party-search-clear" onclick="clearPartySearch()">✕</button>
+      </div>
+      <div class="filter-row">
+        <select id="party-city-filter" onchange="filterParties()"><option value="all">All Cities</option></select>
+        <select id="party-status-filter" onchange="filterParties()">
+          <option value="all">All Status</option>
+          <option value="TRUE">Active</option>
+          <option value="FALSE">Inactive</option>
+        </select>
+        <select id="party-segment-filter" onchange="filterParties()">
+          <option value="all">All Segments</option>
+          <option value="A">Segment A (VIP)</option>
+          <option value="B">Segment B (Regular)</option>
+          <option value="C">Segment C (At-Risk)</option>
+        </select>
+      </div>
+      <div id="parties-count" style="font-size:12px;color:#6b6560;margin-bottom:10px"></div>
+      <div id="parties-list"><div class="loading-box"><div class="spinner"></div><p>Loading…</p></div></div>
+    </div>
+
+    <!-- ═══ SUPPLIERS ═══ -->
+    <div id="atab-suppliers" class="tab-pane" style="display:none" aria-hidden="true"><!-- FIX #4: Supplier hidden -->
+      <div class="page-title">Supplier Management</div>
+      <div class="page-sub">Map products to suppliers, track performance, lead times, and automate reorder alerts</div>
+
+      <div style="background:#e6f0ff;border:1px solid #93c5fd;border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:12.5px;color:#1a5fb4">
+        <strong>ℹ️ How to use:</strong> Add your supplier details below. These are stored locally on this device.
+        Link products to suppliers to get automatic reorder recommendations when demand is high.
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:18px">
+        <button class="btn btn-teal btn-sm" onclick="showAddSupplierModal()">+ Add Supplier</button>
+        <button class="btn btn-sm btn-outline" onclick="renderSuppliers()">🔄 Refresh</button>
+      </div>
+
+      <div id="suppliers-list"></div>
+    </div>
+
+    <!-- ═══ RETURNS ═══ -->
+    <div id="atab-returns" class="tab-pane">
+      <div class="page-title">Returns Management</div>
+      <div class="page-sub">Log returns, track reasons, and manage reverse logistics</div>
+
+      <div class="kpi-grid" style="margin-bottom:20px">
+        <div class="kpi-card" style="--kpi-color:#b5252b">
+          <div class="kpi-icon">↩️</div>
+          <div class="kpi-num" id="ret-total">—</div>
+          <div class="kpi-label">Total Returns</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#f59e0b">
+          <div class="kpi-icon">⏳</div>
+          <div class="kpi-num" id="ret-pending">—</div>
+          <div class="kpi-label">Pending</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#145c30">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-num" id="ret-resolved">—</div>
+          <div class="kpi-label">Resolved</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#5b3fa6">
+          <div class="kpi-icon">📊</div>
+          <div class="kpi-num" id="ret-rate">—%</div>
+          <div class="kpi-label">Return Rate</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <button class="btn btn-teal btn-sm" onclick="showAddReturnModal()">+ Log Return</button>
+        <button class="btn btn-sm btn-outline" onclick="renderReturns()">🔄 Refresh</button>
+      </div>
+
+      <div id="returns-list"></div>
+    </div>
+
+    <!-- ═══ NOTIFICATIONS ═══ -->
+    <div id="atab-notifications" class="tab-pane">
+      <div class="page-title">Push Notifications</div>
+      <div class="page-sub">Broadcast messages to all party portal users in real-time</div>
+      <div class="notif-card">
+        <div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Current Active Notification</div>
+        <div id="current-notif-title" style="font-size:18px;font-weight:700;margin-bottom:4px">—</div>
+        <div id="current-notif-body"  style="font-size:13px;opacity:.85">—</div>
+        <div id="current-notif-ts"    style="font-size:11px;opacity:.6;margin-top:6px"></div>
+        <button onclick="loadCurrentNotif()" style="margin-top:12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer">🔄 Refresh Status</button>
+      </div>
+      <div class="settings-block">
+        <h3>📢 Compose & Push</h3>
+        <div class="field"><label>Title</label><input id="notif-title-input" type="text" placeholder="e.g. New Offers Available 🎁"></div>
+        <div class="field">
+          <label>Message / Description</label>
+          <textarea id="notif-body-input" rows="3" style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid #e8e3dc;background:#f8f9fa;font-family:'Sora',sans-serif;font-size:16px;resize:vertical" placeholder="Message body…"></textarea>
+        </div>
+        <div class="field"><label>Image URL (optional)</label><input id="notif-image-input" type="text" placeholder="https://… shown inside the notification"></div>
+        <div class="field"><label>Link URL (optional)</label><input id="notif-link-input" type="text" placeholder="https://… opens when tapped"></div>
+        <div class="field"><label>Product Code (optional — deep link)</label><input id="notif-product-input" type="text" placeholder="Master/Product code — tapping opens that product"></div>
+        <div class="field"><label>Send to (optional)</label><input id="notif-target-input" type="text" placeholder="Leave blank = everyone. Or enter a party mobile / device code for one party."></div>
+        <button id="push-notif-btn" class="btn btn-teal" onclick="pushNotification()">📢 Push to All Users</button>
+      </div>
+    </div>
+
+    <!-- ═══ PRODUCTS ═══ -->
+    <div id="atab-products" class="tab-pane">
+      <div class="page-title">Product Catalog</div>
+      <div class="page-sub">Manage visibility, sync from Google Sheets, and monitor catalog health</div>
+      <div class="alert-box warn" style="margin-bottom:16px">
+        <div class="alert-icon">⚠️</div>
+        <div><div class="alert-title">Added new products to the sheet?</div><div class="alert-body">Click Sync Products to clear the cache and push fresh data to all party portals immediately.</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button id="sync-products-btn" class="btn btn-teal btn-sm" onclick="syncProducts()">🔄 Sync Products</button>
+        <button class="btn btn-sm" style="background:var(--gold);color:#fff" onclick="syncOffers()">🔄 Sync Offers</button>
+      </div>
+      <div style="font-size:13px;color:#6b6560;margin-bottom:12px;background:#fff;border:1px solid #e8e3dc;border-radius:10px;padding:12px 14px">
+        📦 <strong id="a-prod-count">—</strong> products &nbsp;·&nbsp;
+        🕐 Last sync: <span id="a-sync-time">Never</span> &nbsp;·&nbsp;
+        🎁 <strong id="a-offers-count">—</strong> offers
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input id="prod-admin-search" type="search" placeholder="Search products…" oninput="filterAdminProducts()"
+          style="flex:1;min-width:180px;padding:9px 14px;border-radius:9px;border:1.5px solid #e8e3dc;font-family:'Sora',sans-serif;font-size:16px">
+        <select id="prod-stock-filter" onchange="filterAdminProducts()"
+          style="padding:9px 12px;border-radius:9px;border:1.5px solid #e8e3dc;font-family:'Sora',sans-serif;font-size:13px;background:#fff;cursor:pointer">
+          <option value="all">📦 All Products</option>
+          <option value="instock">✅ In Stock Only</option>
+          <option value="outstock">❌ Out of Stock</option>
+        </select>
+      </div>
+      <div id="admin-prod-list" style="display:flex;flex-direction:column;gap:8px">
+        <div class="loading-box"><div class="spinner"></div><p>Sync products to manage visibility</p></div>
+      </div>
+    </div>
+
+    <!-- ═══ AUDIT LOG ═══ -->
+    <div id="atab-audit" class="tab-pane">
+      <div class="page-title">Audit Log</div>
+      <div class="page-sub">Complete trail of all admin actions — order updates, syncs, notifications, and settings changes</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <select id="audit-filter" onchange="renderAuditLog()" style="padding:8px 12px;border-radius:8px;border:1.5px solid #e8e3dc;font-family:'Sora',sans-serif;font-size:16px">
+          <option value="all">All Actions</option>
+          <option value="order">Order Updates</option>
+          <option value="sync">Product Syncs</option>
+          <option value="notif">Notifications</option>
+          <option value="login">Login Events</option>
+        </select>
+        <button class="btn btn-sm btn-outline" onclick="clearAuditLog()">🗑 Clear Log</button>
+      </div>
+      <div id="audit-log-list"></div>
+    </div>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <div id="atab-settings" class="tab-pane">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Sheet connection, WhatsApp, AI configuration, and system preferences</div>
+
+      <div class="settings-block">
+        <h3>🔒 Admin Password</h3>
+        <div style="font-size:12.5px;color:#6b6560;margin-bottom:10px">Change the admin password (stored only on the server, never in the app code). Use at least 6 characters.</div>
+        <div class="field">
+          <label>New Admin Password</label>
+          <input id="admin-newpw-input" type="password" placeholder="New password (min 6 chars)">
+        </div>
+        <button id="change-pw-btn" class="btn btn-teal btn-sm" onclick="changeAdminPassword()">🔑 Update Password</button>
+      </div>
+
+      <div class="settings-block">
+        <h3>🔗 Google Sheet Connection</h3>
+        <div style="margin-bottom:12px">Status: <span class="conn-badge none" id="conn-badge">Not configured</span></div>
+        <div class="field">
+          <label>Apps Script Web App URL</label>
+          <input id="sheet-url" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-teal btn-sm" onclick="saveUrl()">💾 Save & Connect</button>
+          <button class="btn btn-sm btn-outline" onclick="testConn()">🔍 Test Connection</button>
+        </div>
+        <div style="background:#f8f9fa;border-radius:10px;padding:14px;margin-top:14px;font-size:12px;color:#6b6560;line-height:2">
+          <strong>Setup:</strong><br>
+          1. Sheet tabs required: <code>Products</code>, <code>Offers</code>, <code>Orders</code>, <code>Parties</code>, <code>Notifications</code><br>
+          2. Apps Script → paste apps-script.js → Deploy → Web App → Anyone<br>
+          3. Always select <strong>New version</strong> when redeploying
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <h3>🤖 AI Configuration</h3>
+        <div style="font-size:12px;color:#6b6560;margin-bottom:14px">Connect Claude AI or Gemini AI to enable business insights, demand forecasting, and conversational analytics.</div>
+        <div class="field">
+          <label>AI Provider</label>
+          <select id="ai-provider-select" onchange="onAIProviderChange()" style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid #e8e3dc;font-size:16px;font-family:'Sora',sans-serif">
+            <option value="claude">🧠 Claude AI (Anthropic)</option>
+            <option value="gemini">✨ Gemini AI (Google)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>API Key</label>
+          <input id="ai-api-key-input" type="password" placeholder="Enter your API key…" style="font-family:monospace;font-size:14px">
+          <div style="font-size:11px;color:#6b6560;margin-top:4px">Claude: get from console.anthropic.com · Gemini: get from aistudio.google.com</div>
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <select id="ai-model-select" style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid #e8e3dc;font-size:16px;font-family:'Sora',sans-serif">
+            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (Recommended)</option>
+            <option value="claude-opus-4-5">Claude Opus 4.5 (Most Powerful)</option>
+            <option value="claude-haiku-4-5">Claude Haiku 4.5 (Fastest)</option>
+          </select>
+        </div>
+        <button class="btn btn-teal btn-sm" onclick="saveAIConfig()">💾 Save AI Config</button>
+      </div>
+
+      <div class="settings-block">
+        <h3>📲 WhatsApp Number</h3>
+        <div class="field"><label>Number (country code, no +)</label><input id="wa-num" type="tel" placeholder="919880071357"></div>
+        <button class="btn btn-sm btn-teal" onclick="saveWa()">💾 Save</button>
+      </div>
+
+      <div class="settings-block">
+        <h3>📦 Inventory Thresholds</h3>
+        <div style="font-size:12.5px;color:#6b6560;margin-bottom:14px">Set minimum order counts to trigger reorder alerts on the Inventory tab.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field"><label>Reorder Alert (orders &lt; X)</label><input id="thresh-reorder" type="number" value="3" min="1"></div>
+          <div class="field"><label>Slow Mover (orders &lt; X)</label><input id="thresh-slow" type="number" value="2" min="1"></div>
+        </div>
+        <button class="btn btn-sm btn-teal" onclick="saveThresholds()">💾 Save Thresholds</button>
+      </div>
+
+      <div class="settings-block">
+        <h3>📦 Party Portal — Stock Display</h3>
+        <div style="font-size:12.5px;color:#6b6560;margin-bottom:16px">Control how stock availability is shown to customers on the ordering portal.</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="stock-mode-btn" data-mode="exact" onclick="saveStockMode('exact')"
+            style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:10px;border:2px solid #e8e3dc;background:#fff;cursor:pointer;text-align:left;font-family:'Sora',sans-serif;transition:all .18s">
+            <span style="font-size:22px">🔢</span>
+            <div>
+              <div style="font-size:13.5px;font-weight:700;color:#1a1a1a">Exact Qty Available</div>
+              <div style="font-size:11.5px;color:#6b6560;margin-top:2px">Customers see the exact number (e.g. "✓ 45 pcs")</div>
+            </div>
+          </button>
+          <button class="stock-mode-btn" data-mode="badge" onclick="saveStockMode('badge')"
+            style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:10px;border:2px solid #e8e3dc;background:#fff;cursor:pointer;text-align:left;font-family:'Sora',sans-serif;transition:all .18s">
+            <span style="font-size:22px">✅</span>
+            <div>
+              <div style="font-size:13.5px;font-weight:700;color:#1a1a1a">Show Available or Out of Stock</div>
+              <div style="font-size:11.5px;color:#6b6560;margin-top:2px">Customers see "✓ In Stock" or "No Stock" badge</div>
+            </div>
+          </button>
+          <button class="stock-mode-btn" data-mode="hidden" onclick="saveStockMode('hidden')"
+            style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:10px;border:2px solid #e8e3dc;background:#fff;cursor:pointer;text-align:left;font-family:'Sora',sans-serif;transition:all .18s">
+            <span style="font-size:22px">🚫</span>
+            <div>
+              <div style="font-size:13.5px;font-weight:700;color:#1a1a1a">Hide Availability</div>
+              <div style="font-size:11.5px;color:#6b6560;margin-top:2px">No stock information shown to customers</div>
+            </div>
+          </button>
+        </div>
+        <div id="show-stock-status" style="font-size:11.5px;font-weight:600;margin-top:12px;padding:8px 12px;border-radius:7px;display:none"></div>
+        <style>
+          .stock-mode-btn.active { border-color:#0b6e72 !important; background:#f0fafa !important; }
+          .stock-mode-btn.active div:first-child div:first-child { color:#0b6e72 !important; }
+        </style>
+      </div>
+
+    </div>
+
+   </div><!-- /admin-content -->
+  </div><!-- /admin-body -->
+</div><!-- /page-admin -->
+
+<!-- ═══ MODALS ═══ -->
+<div id="order-modal" class="modal-overlay" onclick="if(event.target===this)closeOrderModal()">
+  <div class="modal-box">
+    <div class="modal-hd"><h3>Order Details</h3><button class="modal-close" onclick="closeOrderModal()">✕</button></div>
+    <div id="order-modal-body" style="padding:0"></div>
+  </div>
+</div>
+
+<div id="party-modal" class="modal-overlay" onclick="if(event.target===this)closePartyModal()">
+  <div class="modal-box">
+    <div class="modal-hd"><h3>Party Profile</h3><button class="modal-close" onclick="closePartyModal()">✕</button></div>
+    <div id="party-modal-body"></div>
+  </div>
+</div>
+
+<div id="device-modal" class="modal-overlay" onclick="if(event.target===this)closeDeviceModal()">
+  <div class="modal-box">
+    <div class="modal-hd"><h3>Device — Permissions</h3><button class="modal-close" onclick="closeDeviceModal()">✕</button></div>
+    <div id="device-modal-body"></div>
+  </div>
+</div>
+
+<div id="supplier-modal" class="modal-overlay" style="display:none" aria-hidden="true" onclick="if(event.target===this)closeSupplierModal()">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-hd"><h3>Add Supplier</h3><button class="modal-close" onclick="closeSupplierModal()">✕</button></div>
+    <div style="padding:22px">
+      <div class="field"><label>Company Name</label><input id="sup-name" type="text" placeholder="e.g. Biochem Pharma"></div>
+      <div class="field"><label>Contact Person</label><input id="sup-contact" type="text" placeholder="Name"></div>
+      <div class="field"><label>Mobile / WhatsApp</label><input id="sup-mobile" type="tel" placeholder="91XXXXXXXXXX"></div>
+      <div class="field"><label>Email</label><input id="sup-email" type="email" placeholder="supplier@example.com"></div>
+      <div class="field"><label>Products Supplied (comma separated)</label><input id="sup-products" type="text" placeholder="e.g. BIOCHEM, UPC001, UPC002"></div>
+      <div class="field"><label>Average Lead Time (days)</label><input id="sup-lead" type="number" value="7" min="1"></div>
+      <button class="btn btn-teal btn-full" onclick="saveSupplier()">💾 Save Supplier</button>
+    </div>
+  </div>
+</div>
+
+<div id="return-modal" class="modal-overlay" onclick="if(event.target===this)closeReturnModal()">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-hd"><h3>Log Return</h3><button class="modal-close" onclick="closeReturnModal()">✕</button></div>
+    <div style="padding:22px">
+      <div class="field"><label>Order Number</label><input id="ret-order-no" type="text" placeholder="e.g. JAP-1234567"></div>
+      <div class="field"><label>Party Name</label><input id="ret-party" type="text" placeholder="Party / shop name"></div>
+      <div class="field"><label>Product</label><input id="ret-product" type="text" placeholder="Product name or code"></div>
+      <div class="field"><label>Quantity Returned (Boxes)</label><input id="ret-qty" type="number" value="1" min="1"></div>
+      <div class="field">
+        <label>Return Reason</label>
+        <select id="ret-reason" style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid #e8e3dc;font-size:16px">
+          <option>Damaged goods</option>
+          <option>Wrong product delivered</option>
+          <option>Expiry date issue</option>
+          <option>Quality complaint</option>
+          <option>Excess stock</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="ret-notes" rows="2" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e8e3dc;font-family:'Sora',sans-serif;font-size:16px"></textarea></div>
+      <button class="btn btn-teal btn-full" onclick="saveReturn()">💾 Log Return</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js?v=48"></script>
+<script src="/js/admin.js?v=48"></script>
+</body>
+</html>

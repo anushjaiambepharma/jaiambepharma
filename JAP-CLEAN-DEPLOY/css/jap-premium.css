@@ -1,0 +1,585 @@
+/* ============================================================
+   JAI AMBE PHARMA — Premium UI (JAP v4.1)
+   Layer on top of style.css — brand-first B2B portal
+   ============================================================ */
+
+:root {
+  --jap-teal: #0a6569;
+  --jap-teal-mid: #0b7a7f;
+  --jap-teal-glow: rgba(11, 122, 127, 0.22);
+  --jap-gold: #c97d0a;
+  --jap-gold-soft: #f5e6cf;
+  --jap-surface: #f4f1eb;
+  --jap-card: #ffffff;
+  --jap-ink: #141414;
+  --jap-muted: #5c5650;
+  --jap-radius: 16px;
+  --jap-radius-sm: 12px;
+  --jap-shadow-card: 0 2px 4px rgba(20, 20, 20, 0.04), 0 8px 24px rgba(20, 20, 20, 0.07);
+  --jap-shadow-float: 0 12px 40px rgba(11, 90, 94, 0.28);
+  --bg: var(--jap-surface);
+  --card: var(--jap-card);
+  --ink: var(--jap-ink);
+  --muted: var(--jap-muted);
+  --teal: var(--jap-teal-mid);
+  --teal-lt: #0e959c;
+  --border: #e6e0d6;
+  --r: var(--jap-radius-sm);
+  --r-lg: var(--jap-radius);
+}
+
+/* ── Auth ─────────────────────────────────────── */
+.auth-page {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201, 125, 10, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 80%, rgba(11, 122, 127, 0.2), transparent 50%),
+    linear-gradient(165deg, #121212 0%, #1a2424 45%, #151520 100%) !important;
+}
+.auth-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 125, 10, 0.15) !important;
+  padding: 36px 28px !important;
+}
+.auth-logo {
+  font-size: 26px !important;
+  letter-spacing: -0.02em;
+}
+.auth-logo span {
+  background: linear-gradient(135deg, #e8a84b, var(--jap-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.field input:focus,
+.field select:focus {
+  box-shadow: 0 0 0 3px var(--jap-teal-glow);
+}
+.btn-teal {
+  background: linear-gradient(135deg, var(--jap-teal-mid), var(--jap-teal)) !important;
+  box-shadow: 0 4px 14px var(--jap-teal-glow);
+  border-radius: var(--jap-radius-sm) !important;
+  padding: 14px 22px !important;
+  font-size: 14px !important;
+}
+
+/* ── App top bar ──────────────────────────────── */
+/* Header removed — toolbar is now the topmost element */
+/* safe-area-inset handled by sticky toolbar so iOS notch is respected */
+.jap-sticky-toolbar {
+  padding-top: max(8px, env(safe-area-inset-top)) !important;
+}
+
+/* jap-top-meta-row removed — refresh is now inside the toolbar row */
+.jap-refresh-btn.loading { opacity: 0.5; pointer-events: none; }
+
+/* Keep party-chip class for any backward-compat references */
+.jap-party-chip {
+  flex-shrink: 0;
+  max-width: 46%;
+  padding: 6px 12px;
+  border-radius: 50px;
+  background: rgba(11, 110, 114, 0.1);
+  border: 1px solid rgba(11, 110, 114, 0.2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--jap-teal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Sticky toolbar (search + actions) ────────── */
+.jap-sticky-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 190;
+  background: var(--jap-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 10px 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+/* Sticky toolbar now sits at top:0 directly (no header above it) */
+.jap-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.jap-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.jap-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+.jap-search-input {
+  width: 100%;
+  padding: 10px 36px 10px 36px !important;
+  border-radius: var(--jap-radius-sm) !important;
+  border: 1.5px solid var(--border) !important;
+  background: var(--jap-card) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.jap-search-input:focus {
+  border-color: var(--jap-teal-mid) !important;
+  box-shadow: 0 0 0 3px var(--jap-teal-glow) !important;
+}
+#notif-bell-btn {
+  position: relative;
+}
+.jap-tool-btn {
+  flex-shrink: 0;
+  height: 42px;
+  min-width: 42px;
+  padding: 0 12px;
+  border-radius: var(--jap-radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--jap-card);
+  color: var(--jap-ink);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.jap-tool-btn:active {
+  transform: scale(0.96);
+}
+.jap-tool-btn-primary {
+  background: linear-gradient(135deg, var(--jap-teal-mid), var(--jap-teal));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 12px var(--jap-teal-glow);
+}
+.jap-tool-select {
+  flex-shrink: 0;
+  height: 42px;
+  width: 48px;
+  padding: 0 6px;
+  border-radius: var(--jap-radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--jap-card);
+  font-weight: 700;
+  color: var(--jap-ink);
+  cursor: pointer;
+}
+.jap-filters-panel {
+  margin-top: 8px;
+}
+.jap-filters-panel .chip {
+  border-radius: 50px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--jap-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.jap-filters-panel .chip.active {
+  background: linear-gradient(135deg, var(--jap-teal-mid), var(--jap-teal));
+  border-color: transparent;
+  box-shadow: 0 3px 10px var(--jap-teal-glow);
+}
+.sort-select {
+  border-radius: 50px !important;
+  padding: 6px 12px !important;
+  font-weight: 600 !important;
+  background: var(--jap-card) !important;
+}
+
+/* ── Product cards ────────────────────────────── */
+.product-grid {
+  gap: 12px !important;
+  padding: 8px 12px 16px !important;
+}
+.pcard {
+  border: none !important;
+  border-radius: var(--jap-radius) !important;
+  box-shadow: var(--jap-shadow-card) !important;
+  border-left: 4px solid var(--co-accent, var(--jap-teal-mid)) !important;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.pcard:active {
+  transform: scale(0.985);
+}
+.pcard-instock {
+  border-left-color: var(--co-accent, #16a34a) !important;
+  box-shadow: var(--jap-shadow-card), inset 0 0 0 1px rgba(22, 163, 74, 0.08) !important;
+}
+.pcard-top {
+  padding: 14px 14px 10px !important;
+  border-bottom: none !important;
+}
+.pcard-name {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  color: var(--jap-ink);
+  letter-spacing: -0.01em;
+}
+.pcard-comp {
+  font-size: 11px !important;
+  color: var(--jap-muted) !important;
+  margin-top: 4px !important;
+}
+.pcard-bottom {
+  padding: 10px 12px 12px !important;
+  background: linear-gradient(180deg, #faf9f6 0%, #f3f0ea 100%) !important;
+  border-top: 1px solid var(--border);
+}
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 8px;
+}
+.price-mrp {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--jap-ink);
+}
+.price-pts {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--jap-teal-mid);
+  background: rgba(11, 122, 127, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.btn-add {
+  background: linear-gradient(145deg, var(--jap-teal-mid), var(--jap-teal)) !important;
+  border-radius: var(--jap-radius-sm) !important;
+  box-shadow: 0 3px 10px var(--jap-teal-glow);
+  font-size: 20px !important;
+}
+.btn-add:hover {
+  filter: brightness(1.06);
+}
+.added-badge {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0) !important;
+  color: #14532d !important;
+  border-radius: var(--jap-radius-sm) !important;
+  font-weight: 700 !important;
+}
+.fav-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.fav-btn.active {
+  background: #fff0f3;
+  transform: scale(1.05);
+}
+.pcard {
+  position: relative;
+}
+.pcard-badges {
+  padding: 10px 12px 0 !important;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.badge-company {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px !important;
+  border-radius: 50px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.badge-stock-in {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.badge-stock-out {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.badge-popular {
+  border-radius: 50px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.scheme-banner {
+  margin: 0 12px 8px !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+}
+
+/* ── Bottom navigation (floating pill) ────────── */
+.bottom-nav {
+  position: fixed !important;
+  left: 10px !important;
+  right: 10px !important;
+  bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 6px 8px !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(11, 90, 94, 0.08) !important;
+  gap: 2px;
+}
+.bnav-tab {
+  border-radius: 14px !important;
+  padding: 8px 4px 6px !important;
+  font-size: 9.5px !important;
+  font-weight: 600 !important;
+  transition: background 0.2s, color 0.2s;
+}
+.bnav-tab.active {
+  color: var(--jap-teal-mid) !important;
+  background: rgba(11, 122, 127, 0.1);
+}
+.bnav-tab.active::after {
+  display: none !important;
+}
+.bnav-tab .bni {
+  font-size: 20px !important;
+}
+#page-app {
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* ── Floating cart bar ────────────────────────── */
+.float-order-btn {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  z-index: 140;
+  cursor: pointer;
+  animation: japSlideUp 0.35s ease;
+}
+@keyframes japSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fob-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: var(--jap-radius);
+  background: linear-gradient(135deg, var(--jap-teal-mid), #065a5e);
+  color: #fff;
+  box-shadow: var(--jap-shadow-float);
+}
+.fob-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fob-icon {
+  font-size: 28px;
+}
+.fob-count {
+  font-size: 15px;
+  font-weight: 800;
+}
+.fob-sub {
+  font-size: 11px;
+  opacity: 0.85;
+}
+.fob-right {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+}
+
+/* ── WhatsApp FAB ─────────────────────────────── */
+.global-wa-fab {
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  width: 56px !important;
+  height: 56px !important;
+  box-shadow: 0 6px 24px rgba(37, 211, 102, 0.5) !important;
+  border: 3px solid #fff;
+}
+
+/* ── Cart & orders ────────────────────────────── */
+.cart-item {
+  border-radius: var(--jap-radius) !important;
+  box-shadow: var(--jap-shadow-card) !important;
+  border: none !important;
+  padding: 16px !important;
+}
+.wa-order-btn {
+  border-radius: var(--jap-radius) !important;
+  background: linear-gradient(135deg, var(--jap-teal-mid), var(--jap-teal)) !important;
+}
+.order-card {
+  border-radius: var(--jap-radius) !important;
+  box-shadow: var(--jap-shadow-card) !important;
+  border: none !important;
+  overflow: hidden;
+}
+.empty-state {
+  padding: 48px 24px !important;
+}
+.empty-state .empty-icon {
+  font-size: 52px;
+  filter: grayscale(0.2);
+}
+.section-title {
+  font-size: 20px !important;
+  color: var(--jap-ink);
+}
+
+/* ── Toast ────────────────────────────────────── */
+#toast-wrap {
+  bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+}
+.toast {
+  border-radius: 50px !important;
+  padding: 12px 24px !important;
+  font-weight: 600 !important;
+}
+
+/* ── Pending / modals ─────────────────────────── */
+#page-pending {
+  background: linear-gradient(160deg, var(--jap-teal), #0e959c) !important;
+}
+#thankyou-dialog > div {
+  border-radius: var(--jap-radius) !important;
+}
+
+/* ── Tab section titles ───────────────────────── */
+#tab-nearexpiry h2 {
+  font-size: 20px !important;
+  color: var(--jap-ink);
+}
+
+/* ── Landing (index) boost ────────────────────── */
+.lp-logo span {
+  background: linear-gradient(135deg, #f0c878, var(--jap-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.portal-card:hover {
+  border-color: rgba(201, 125, 10, 0.5) !important;
+}
+
+/* ── Admin portal ─────────────────────────────── */
+.admin-topnav {
+  background: var(--jap-card) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05) !important;
+}
+.atnav-tab.active {
+  background: rgba(11, 122, 127, 0.08) !important;
+  border-radius: 10px 10px 0 0;
+}
+.stat-card {
+  border-radius: var(--jap-radius) !important;
+  box-shadow: var(--jap-shadow-card) !important;
+  border: none !important;
+}
+.stat-num {
+  color: var(--jap-teal-mid) !important;
+}
+
+/* Permissions loading gate */
+#perms-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  background: rgba(244, 241, 235, 0.92);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.perms-gate-card {
+  text-align: center;
+  background: var(--jap-card);
+  padding: 28px 32px;
+  border-radius: var(--jap-radius);
+  box-shadow: var(--jap-shadow-card);
+}
+.perms-gate-card p {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--jap-muted);
+  font-weight: 600;
+}
+
+/* ── Sticky search + filter header inside each tab (Fix #6) ──────── */
+.tab-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--card-bg, #fff);
+  padding: 6px 10px 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.tab-search-wrap { margin-bottom: 6px; }
+.tab-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+  background: #f9f9f9;
+  outline: none;
+}
+.tab-search-input:focus {
+  border-color: var(--jap-teal);
+  background: #fff;
+}
+.tab-sticky-header .filter-bar {
+  padding: 0;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+}
